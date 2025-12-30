@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3 uid="uid://cp0q11ajafkf3"]
+
+[ext_resource type="Script" uid="uid://d4c0nxaty8xyc" path="res://scripts/ui/character_display.gd" id="1_character_display"]
+
+[node name="CharacterDisplay" type="VBoxContainer"]
+script = ExtResource("1_character_display")
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+text = "Character Name"
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+layout_mode = 2
+value = 100.0
+
+[node name="AttributesLabel" type="Label" parent="."]
+layout_mode = 2
+text = "P:1 S:1 St:1 Sp:1 L:1"

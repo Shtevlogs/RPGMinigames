@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://caar1ohejbau6"]
+
+[ext_resource type="Script" uid="uid://chhol4tiin2g0" path="res://scripts/ui/enemy_display.gd" id="1_enemy_display"]
+[ext_resource type="Texture2D" uid="uid://4cyny4kscjrd" path="res://sprites/placeholder.png" id="2_placeholder"]
+
+[node name="EnemyDisplay" type="VBoxContainer"]
+script = ExtResource("1_enemy_display")
+
+[node name="Sprite" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("2_placeholder")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+text = "Enemy Name"
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+layout_mode = 2
+value = 100.0

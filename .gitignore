@@ -1,16 +1,60 @@
 # Godot 4+ specific ignores
 .godot/
-.nomedia
+/android/
 
-# Godot-specific ignores
-.import/
-export.cfg
-export_credentials.cfg
+# Large image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tga
+*.psd
+*.tiff
+*.tif
+*.webp
+*.exr
+*.hdr
 
-# Imported translations (automatically generated from CSV files)
-*.translation
+# Audio files
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.aac
+*.m4a
+*.wma
+*.opus
 
-# Mono-specific ignores
-.mono/
-data_*/
-mono_crash.*.json
+# Video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.flv
+*.wmv
+
+# 3D model files
+*.fbx
+*.obj
+*.blend
+*.dae
+*.3ds
+*.max
+*.ma
+*.mb
+
+# Archive files
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+
+# Other large binary files
+*.exe
+*.dll
+*.so
+*.dylib

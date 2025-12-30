@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://beagn0dy0m2wm"]
+
+[ext_resource type="Script" uid="uid://duc31fxp6atja" path="res://scripts/scenes/party_selection.gd" id="1_party_selection"]
+
+[node name="PartySelection" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_party_selection")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Select Your Party"
+horizontal_alignment = 1
+
+[node name="ClassSelectionContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="ConfirmButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Confirm Party"
+
+[node name="RerollButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Reroll Selection"

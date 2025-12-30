@@ -1,0 +1,112 @@
+[gd_scene load_steps=3 format=3 uid="uid://b52a01yft1ixt"]
+
+[ext_resource type="Script" uid="uid://blcjba4gvkm33" path="res://scripts/scenes/combat.gd" id="1_combat"]
+[ext_resource type="Script" uid="uid://dkg8x0cmf14dw" path="res://scripts/ui/combat_log.gd" id="2_combat_log"]
+
+[node name="Combat" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_combat")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.15, 0.1, 0.1, 1)
+
+[node name="CombatLog" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 300.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("2_combat_log")
+
+[node name="LogContainer" type="VBoxContainer" parent="CombatLog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TurnOrderContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 80.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="PartyContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -100.0
+offset_right = 500.0
+offset_bottom = -20.0
+grow_vertical = 0
+
+[node name="EnemyContainer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -50.0
+offset_right = 250.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ActionPanel" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -150.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="ActionLabel" type="Label" parent="ActionPanel"]
+layout_mode = 2
+text = "Actions"
+
+[node name="AttackButton" type="Button" parent="ActionPanel"]
+layout_mode = 2
+text = "Attack"
+
+[node name="ItemButton" type="Button" parent="ActionPanel"]
+layout_mode = 2
+text = "Item"
+
+[node name="AbilityButton" type="Button" parent="ActionPanel"]
+layout_mode = 2
+text = "Spell/Ability"
+
+[node name="WinButton" type="Button" parent="ActionPanel"]
+layout_mode = 2
+text = "Win (Test)"

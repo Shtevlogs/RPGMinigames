@@ -1,0 +1,33 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="rpminigame"
+run/main_scene="uid://bn8w4w3hfto31"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*res://scripts/managers/game_manager.gd"
+SceneManager="*res://scripts/managers/scene_manager.gd"
+StateManager="*res://scripts/managers/state_manager.gd"
+SaveManager="*res://scripts/managers/save_manager.gd"
+EncounterManager="*res://scripts/managers/encounter_manager.gd"
+MinigameRegistry="*res://scripts/managers/minigame_registry.gd"
+SoundManager="*res://scripts/managers/sound_manager.gd"
+DelayManager="*res://scripts/managers/delay_manager.gd"
+VfxManager="*res://scripts/managers/vfx_manager.gd"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3 uid="uid://y115y5vjdg0q"]
+
+[ext_resource type="Script" uid="uid://b5w38e5rqkdw5" path="res://scripts/minigames/monk_minigame.gd" id="1_monk_minigame"]
+
+[node name="MonkMinigame" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_monk_minigame")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.05, 0.05, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Monk Minigame (Rock Paper Scissors)"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Select a move"
+horizontal_alignment = 1
+
+[node name="EnemyCardsLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Enemy Cards: "
+horizontal_alignment = 1
+
+[node name="CurrentCardLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Enemy will randomly select a card"
+horizontal_alignment = 1
+
+[node name="OutcomeLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Outcome: Select a move"
+horizontal_alignment = 1
+
+[node name="RedoCounterLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Redos Available: 0 | Remaining: 0"
+horizontal_alignment = 1
+
+[node name="CardsContainer" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="MoveContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="StrikeButton" type="Button" parent="VBoxContainer/MoveContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Strike (Rock)"
+
+[node name="GrappleButton" type="Button" parent="VBoxContainer/MoveContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Grapple (Paper)"
+
+[node name="CounterButton" type="Button" parent="VBoxContainer/MoveContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "Counter (Scissors)"
+
+[node name="ButtonContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="RedoButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+disabled = true
+text = "Redo"
+
+[node name="ConfirmButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+disabled = true
+text = "Confirm"
