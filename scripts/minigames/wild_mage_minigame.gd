@@ -509,7 +509,7 @@ func _get_selected_cards_data() -> Array:
         })
     return cards_data
 
-static func build_context(_character: Character, _target: Variant) -> Dictionary:
+static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
     """Build context data for Wild Mage minigame."""
     # This is handled by WildMageBehavior.build_minigame_context()
     # This method exists for consistency with other minigames

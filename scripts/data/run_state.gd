@@ -1,7 +1,7 @@
 class_name RunState
 extends RefCounted
 
-var party: Array[Character] = []  # 3 characters
+var party: Array[CharacterBattleEntity] = []  # 3 characters
 var current_land: int = 1  # 1-5
 var current_land_theme: String = ""
 var encounter_progress: int = 0  # encounters completed in current land

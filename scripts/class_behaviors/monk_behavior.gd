@@ -7,12 +7,12 @@ const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.
 func needs_target_selection() -> bool:
     return true  # Monk needs target selection
 
-func build_minigame_context(character: Character, target: Variant) -> MinigameContext:
+func build_minigame_context(character: CharacterBattleEntity, target: BattleEntity) -> MinigameContext:
     """Build context data for Monk minigame."""
-    if target == null or not (target is EnemyData):
+    if target == null or not (target is EnemyBattleEntity):
         return null
     
-    var enemy: EnemyData = target as EnemyData
+    var enemy: EnemyBattleEntity = target as EnemyBattleEntity
     var effective_attrs: Attributes = character.get_effective_attributes()
     
     # Number of cards = Enemy effective Strategy - Monk Strategy (minimum 1)
@@ -45,7 +45,7 @@ func build_minigame_context(character: Character, target: Variant) -> MinigameCo
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/monk_minigame.tscn"
 
-func apply_attack_effects(_attacker: Character, target: EnemyData, base_damage: int) -> int:
+func apply_attack_effects(_attacker: CharacterBattleEntity, target: EnemyBattleEntity, base_damage: int) -> int:
     """Monk attack effects: reduce target's Strategy by 1 (stacking)."""
     # Apply AlterAttributeEffect to reduce Strategy by 1
     # Duration of 99 turns (effectively until end of encounter or removed)
@@ -53,7 +53,7 @@ func apply_attack_effects(_attacker: Character, target: EnemyData, base_damage: 
     target.add_status_effect(strategy_debuff)
     return base_damage
 
-func format_minigame_result(_character: Character, result: MinigameResult) -> Array[String]:
+func format_minigame_result(_character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Monk minigame results for logging."""
     # The minigame's format_result() method handles formatting
     # This method can add behavior-specific formatting if needed
@@ -64,6 +64,6 @@ func format_minigame_result(_character: Character, result: MinigameResult) -> Ar
     # For now, return empty (minigame handles its own formatting)
     return []
 
-func get_ability_target(_character: Character, _result: MinigameResult) -> Variant:
+func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     """Monk needs a target, so return null (target should be provided)."""
     return null

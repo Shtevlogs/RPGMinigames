@@ -7,7 +7,7 @@ const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigam
 func needs_target_selection() -> bool:
     return false  # Berserker doesn't need target selection
 
-func build_minigame_context(character: Character, _target: Variant) -> MinigameContext:
+func build_minigame_context(character: CharacterBattleEntity, _target: BattleEntity) -> MinigameContext:
     """Build context data for Berserker minigame."""
     var class_state = character.class_state
     
@@ -24,7 +24,7 @@ func build_minigame_context(character: Character, _target: Variant) -> MinigameC
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/berserker_minigame.tscn"
 
-func apply_attack_effects(attacker: Character, _target: EnemyData, base_damage: int) -> int:
+func apply_attack_effects(attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
     """Berserker attack effects: effect ranges (not berserking) or 1.5x damage + heal (berserking)."""
     var class_state = attacker.class_state
     var is_berserking: bool = class_state.get("is_berserking", false)
@@ -49,7 +49,7 @@ func apply_attack_effects(attacker: Character, _target: EnemyData, base_damage: 
         # TODO: Track effect ranges for next ability use (see backlog item 06)
         return base_damage
 
-func _remove_berserk_effect(character: Character) -> void:
+func _remove_berserk_effect(character: CharacterBattleEntity) -> void:
     """Remove BerserkEffect from character, which will clean up class_state and attribute effects."""
     # Find and remove BerserkEffect using script comparison
     var to_remove: Array[StatusEffect] = []
@@ -57,13 +57,12 @@ func _remove_berserk_effect(character: Character) -> void:
         if effect.get_script() == BERSERK_EFFECT:
             to_remove.append(effect)
     
-    # Remove effects (call on_remove for cleanup if it exists)
+    # Remove effects (call on_remove for cleanup)
     for effect in to_remove:
-        if effect.has_method("on_remove"):
-            effect.on_remove()
+        effect.on_remove(battle_state)
         character.status_effects.erase(effect)
 
-func format_minigame_result(character: Character, result: MinigameResult) -> Array[String]:
+func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Berserker minigame results for logging."""
     var log_entries: Array[String] = []
     
@@ -94,6 +93,6 @@ func format_minigame_result(character: Character, result: MinigameResult) -> Arr
     
     return log_entries
 
-func get_ability_target(_character: Character, _result: MinigameResult) -> Variant:
+func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     """Berserker may hit all enemies/allies, so return null (target should be provided)."""
     return null

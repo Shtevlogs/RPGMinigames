@@ -1,5 +1,5 @@
 class_name MinigameBattleState
-extends RefCounted
+extends GameStateSerializable
 
 var class_type: String = ""
 var state_data: Variant = null  # Class-specific state data (type depends on class)

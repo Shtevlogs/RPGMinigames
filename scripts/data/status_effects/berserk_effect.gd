@@ -23,7 +23,7 @@ func _matches_existing_effect(existing: StatusEffect) -> bool:
     # Match other BerserkEffect instances
     return existing is BerserkEffect
 
-func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> void:
+func on_apply(p_target: BattleEntity, status_effects_array: Array[StatusEffect]) -> void:
     # Call parent to handle matching and appending
     super.on_apply(p_target, status_effects_array)
     
@@ -43,8 +43,8 @@ func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> v
         _update_attribute_effects(p_target, existing_effect.berserk_stacks, existing_effect)
     else:
         # New effect: set up class_state and apply Power/Speed effects
-        if p_target is Character:
-            var character: Character = p_target as Character
+        if p_target is CharacterBattleEntity:
+            var character: CharacterBattleEntity = p_target as CharacterBattleEntity
             character.class_state["is_berserking"] = true
             character.class_state["berserk_stacks"] = berserk_stacks
             
@@ -54,13 +54,14 @@ func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> v
             character.add_status_effect(power_effect_ref)
             character.add_status_effect(speed_effect_ref)
 
-func on_tick(_combatant: Variant = null) -> Dictionary:
-    return {}  # No turn-based effects
+func on_tick(_battle_state: BattleState) -> void:
+    # No turn-based effects
+    pass
 
-func on_remove() -> void:
+func on_remove(_battle_state: BattleState) -> void:
     # Called when effect is removed - clean up class_state and attribute effects
-    if target is Character:
-        var character: Character = target as Character
+    if target is CharacterBattleEntity:
+        var character: CharacterBattleEntity = target as CharacterBattleEntity
         character.class_state["is_berserking"] = false
         character.class_state["berserk_stacks"] = 0
         
@@ -70,19 +71,19 @@ func on_remove() -> void:
         if speed_effect_ref != null and speed_effect_ref in character.status_effects:
             character.status_effects.erase(speed_effect_ref)
 
-func _update_class_state(p_target: Variant, num_stacks: int) -> void:
+func _update_class_state(p_target: BattleEntity, num_stacks: int) -> void:
     """Update class_state with berserk information."""
-    if p_target is Character:
-        var character: Character = p_target as Character
+    if p_target is CharacterBattleEntity:
+        var character: CharacterBattleEntity = p_target as CharacterBattleEntity
         character.class_state["is_berserking"] = true
         character.class_state["berserk_stacks"] = num_stacks
 
-func _update_attribute_effects(p_target: Variant, num_stacks: int, effect_to_update: BerserkEffect = null) -> void:
+func _update_attribute_effects(p_target: BattleEntity, num_stacks: int, effect_to_update: BerserkEffect = null) -> void:
     """Update Power and Speed AlterAttributeEffects to match current stacks."""
-    if not (p_target is Character):
+    if not (p_target is CharacterBattleEntity):
         return
     
-    var character: Character = p_target as Character
+    var character: CharacterBattleEntity = p_target as CharacterBattleEntity
     
     # Determine which effect instance to update (self or existing effect when stacking)
     var target_effect: BerserkEffect = effect_to_update if effect_to_update != null else self
@@ -112,3 +113,15 @@ func duplicate() -> StatusEffect:
     dup.stacks = stacks
     dup.magnitude = magnitude
     return dup
+
+func serialize() -> Dictionary:
+    """Serialize berserk effect to dictionary."""
+    var data: Dictionary = super.serialize()
+    data["class"] = "berserk"
+    data["berserk_stacks"] = berserk_stacks
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize berserk effect from dictionary."""
+    super.deserialize(data)
+    berserk_stacks = data.get("berserk_stacks", 1)

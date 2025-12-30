@@ -12,7 +12,7 @@ enum EncounterType {
 
 var encounter_id: String
 var encounter_type: EncounterType
-var enemy_composition: Array[EnemyData] = []
+var enemy_composition: Array[EnemyBattleEntity] = []
 var enemy_formation: Array[Vector2] = []  # Positions for enemies
 var rewards: Rewards
 var encounter_pool: String = ""  # land theme + difficulty

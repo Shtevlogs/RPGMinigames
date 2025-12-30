@@ -81,23 +81,9 @@ func serialize_run_state(run_state: RunState) -> Dictionary:
     if run_state.auto_save_data.has("battle_state"):
         data["battle_state"] = run_state.auto_save_data["battle_state"]
     
-    # Serialize party (simplified - you'll need to expand this)
+    # Serialize party using entity serialize method
     for character in run_state.party:
-        var char_data: Dictionary = {
-            "class_type": character.class_type,
-            "attributes": {
-                "power": character.attributes.power,
-                "skill": character.attributes.skill,
-                "strategy": character.attributes.strategy,
-                "speed": character.attributes.speed,
-                "luck": character.attributes.luck
-            },
-            "health": {
-                "current": character.health.current,
-                "max": character.health.max_hp
-            }
-        }
-        data.party.append(char_data)
+        data.party.append(character.serialize())
     
     # Serialize inventory (simplified)
     for item in run_state.inventory:
@@ -127,19 +113,12 @@ func deserialize_run_state(data: Dictionary) -> RunState:
     if run_state.land_sequence.is_empty() and not run_state.party.is_empty():
         run_state.generate_land_sequence()
     
-    # Deserialize party
+    # Deserialize party using entity deserialize method
     for character_data in data.get("party", []):
-        var attrs: Attributes = Attributes.new(
-            character_data.attributes.power,
-            character_data.attributes.skill,
-            character_data.attributes.strategy,
-            character_data.attributes.speed,
-            character_data.attributes.luck
-        )
-        var character: Character = Character.new(character_data.class_type, attrs)
-        character.health.current = character_data.health.current
-        character.health.max_hp = character_data.health.max
-        run_state.party.append(character)
+        if character_data is Dictionary:
+            var character: CharacterBattleEntity = CharacterBattleEntity.new()
+            character.deserialize(character_data)
+            run_state.party.append(character)
     
     # Deserialize inventory (simplified)
     for item_data in data.get("inventory", []):

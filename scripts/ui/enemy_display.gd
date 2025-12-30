@@ -1,12 +1,12 @@
 class_name EnemyDisplay
 extends VBoxContainer
 
-signal enemy_clicked(enemy: EnemyData)
+signal enemy_clicked(enemy: EnemyBattleEntity)
 
 @onready var name_label: Label = $NameLabel
 @onready var health_bar: ProgressBar = $HealthBar
 
-var enemy_data: EnemyData = null
+var enemy_data: EnemyBattleEntity = null
 var is_selectable: bool = false
 var status_effects_container: HBoxContainer = null
 var glow_sprite: Sprite2D = null  # For turn highlighting glow
@@ -21,7 +21,7 @@ func _ready() -> void:
     add_child(status_effects_container)
     move_child(status_effects_container, 1)  # Place after name label
 
-func set_enemy(enemy_ref: EnemyData) -> void:
+func set_enemy(enemy_ref: EnemyBattleEntity) -> void:
     enemy_data = enemy_ref
 
 func set_selectable(selectable: bool) -> void:

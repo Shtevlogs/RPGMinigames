@@ -5,7 +5,7 @@ extends VBoxContainer
 @onready var health_bar: ProgressBar = $HealthBar
 @onready var attributes_label: Label = $AttributesLabel
 
-var character: Character = null
+var character: CharacterBattleEntity = null
 var status_effects_container: HBoxContainer = null
 var highlight_panel: Panel = null  # For turn highlighting border
 
@@ -17,7 +17,7 @@ func _ready() -> void:
     add_child(status_effects_container)
     move_child(status_effects_container, 1)  # Place after name label
 
-func set_character(character_ref: Character) -> void:
+func set_character(character_ref: CharacterBattleEntity) -> void:
     character = character_ref
 
 func update_display() -> void:

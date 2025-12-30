@@ -5,8 +5,8 @@ extends Control
 @onready var confirm_button: Button = $VBoxContainer/ConfirmButton
 @onready var reroll_button: Button = $VBoxContainer/RerollButton
 
-var available_characters: Array[Character] = []
-var selected_party: Array[Character] = []
+var available_characters: Array[CharacterBattleEntity] = []
+var selected_party: Array[CharacterBattleEntity] = []
 
 const CLASS_TYPES = ["Berserker", "TimeWizard", "Monk", "WildMage"]
 
@@ -30,7 +30,7 @@ func generate_class_selection() -> void:
         class_counts[class_type] += 1
         var character_name: String = "%s %d" % [class_type, class_counts[class_type]]
         # Create character with class_type and name, attributes will default
-        var character: Character = Character.new(class_type, null, character_name, character_name)
+        var character: CharacterBattleEntity = CharacterBattleEntity.new(class_type, null, character_name, character_name)
         character.class_type = class_type
         available_characters.append(character)
     
@@ -46,12 +46,12 @@ func update_ui() -> void:
         var button: Button = Button.new()
         button.text = character.display_name
         button.toggle_mode = true
-        # Store Character reference in button metadata
+        # Store CharacterBattleEntity reference in button metadata
         button.set_meta("character", character)
         button.pressed.connect(_on_character_selected.bind(character))
         class_selection_container.add_child(button)
 
-func _on_character_selected(character: Character) -> void:
+func _on_character_selected(character: CharacterBattleEntity) -> void:
     # Toggle selection (max 3)
     var index = selected_party.find(character)
     if index >= 0:
@@ -67,10 +67,10 @@ func _on_character_selected(character: Character) -> void:
     update_selection_ui()
 
 func update_selection_ui() -> void:
-    # Update button states by matching Character objects by reference
+    # Update button states by matching CharacterBattleEntity objects by reference
     for i in range(class_selection_container.get_child_count()):
         var button: Button = class_selection_container.get_child(i)
-        var character: Character = button.get_meta("character")
+        var character: CharacterBattleEntity = button.get_meta("character")
         if character in selected_party:
             button.button_pressed = true
         else:
@@ -82,7 +82,7 @@ func _on_confirm_pressed() -> void:
     if selected_party.size() != 3:
         return
     
-    # Use the selected Character objects directly (no need to recreate them)
+    # Use the selected CharacterBattleEntity objects directly (no need to recreate them)
     # Start new run
     GameManager.start_new_run(selected_party)
     SceneManager.go_to_combat()

@@ -1,5 +1,5 @@
 class_name Health
-extends RefCounted
+extends GameStateSerializable
 
 var current: int
 var max_hp: int  # Calculated from Power
@@ -28,3 +28,15 @@ func get_percentage() -> float:
 
 func duplicate() -> Health:
     return Health.new(max_hp, current)
+
+func serialize() -> Dictionary:
+    """Serialize health to dictionary."""
+    return {
+        "current": current,
+        "max_hp": max_hp
+    }
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize health from dictionary."""
+    max_hp = data.get("max_hp", 10)
+    current = data.get("current", max_hp)

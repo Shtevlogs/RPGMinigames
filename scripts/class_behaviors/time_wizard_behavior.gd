@@ -6,7 +6,7 @@ const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_min
 func needs_target_selection() -> bool:
     return true  # TimeWizard needs target selection
 
-func build_minigame_context(character: Character, _target: Variant) -> MinigameContext:
+func build_minigame_context(character: CharacterBattleEntity, _target: BattleEntity) -> MinigameContext:
     """Build context data for Time Wizard minigame."""
     var effective_attrs: Attributes = character.get_effective_attributes()
     var class_state = character.class_state
@@ -34,13 +34,13 @@ func build_minigame_context(character: Character, _target: Variant) -> MinigameC
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/time_wizard_minigame.tscn"
 
-func apply_attack_effects(_attacker: Character, _target: EnemyData, base_damage: int) -> int:
+func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
     """Time Wizard attack effects: partially clear board for next ability cast."""
     # TODO: Track board state and apply pre-cleared squares
     # For now, stubbed
     return base_damage
 
-func format_minigame_result(character: Character, result: MinigameResult) -> Array[String]:
+func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Time Wizard minigame results for logging."""
     var log_entries: Array[String] = []
     
@@ -68,6 +68,6 @@ func format_minigame_result(character: Character, result: MinigameResult) -> Arr
     
     return log_entries
 
-func get_ability_target(_character: Character, _result: MinigameResult) -> Variant:
+func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     """Time Wizard needs a target, so return null (target should be provided)."""
     return null

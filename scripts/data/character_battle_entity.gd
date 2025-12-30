@@ -1,4 +1,4 @@
-class_name Character
+class_name CharacterBattleEntity
 extends BattleEntity
 
 var class_type: String  # Berserker, TimeWizard, Monk, WildMage, etc.
@@ -28,8 +28,8 @@ func get_effective_attributes() -> Attributes:
 func add_status_effect(effect: StatusEffect) -> void:
     status_manager.add_status_effect(effect)
 
-func tick_status_effects() -> Dictionary:
-    return status_manager.tick_status_effects()
+func tick_status_effects(battle_state: BattleState) -> void:
+    status_manager.tick_status_effects(battle_state)
 
 func has_status_effect(effect_class: GDScript) -> bool:
     return status_manager.has_status_effect(effect_class)
@@ -37,8 +37,8 @@ func has_status_effect(effect_class: GDScript) -> bool:
 func is_party_member() -> bool:
     return true
 
-func duplicate() -> Character:
-    var dup: Character = Character.new(class_type, attributes.duplicate(), entity_id, display_name)
+func duplicate() -> CharacterBattleEntity:
+    var dup: CharacterBattleEntity = CharacterBattleEntity.new(class_type, attributes.duplicate(), entity_id, display_name)
     dup.health = health.duplicate()
     dup.equipment = equipment.duplicate()
     # Duplicate status effects using manager helper
@@ -46,4 +46,26 @@ func duplicate() -> Character:
     for effect in duplicated_effects:
         dup.status_manager.status_effects.append(effect)
     dup.class_state = class_state.duplicate()
+    dup.position = position
     return dup
+
+func serialize() -> Dictionary:
+    """Serialize character to dictionary."""
+    var data: Dictionary = super.serialize()
+    data["class_type"] = class_type
+    data["equipment"] = equipment.serialize() if equipment != null else {}
+    data["class_state"] = class_state.duplicate()
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize character from dictionary."""
+    super.deserialize(data)
+    class_type = data.get("class_type", "")
+    
+    # Deserialize equipment
+    var equipment_data: Dictionary = data.get("equipment", {})
+    equipment = EquipmentSlots.new()
+    equipment.deserialize(equipment_data)
+    
+    # Deserialize class_state
+    class_state = data.get("class_state", {}).duplicate()

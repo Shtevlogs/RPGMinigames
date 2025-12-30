@@ -6,7 +6,7 @@ extends Control
 
 signal minigame_completed(result: MinigameResult)
 
-var character: Character = null
+var character: CharacterBattleEntity = null
 var target: Variant = null
 var minigame_context: Dictionary = {}
 
@@ -32,7 +32,7 @@ func complete_minigame(result: MinigameResult) -> void:
 
 # Static method to build context for this minigame type
 # Override in subclasses to build class-specific context
-static func build_context(_character: Character, _target: Variant) -> Dictionary:
+static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
     push_error("build_context() must be implemented in subclass")
     return {}
 

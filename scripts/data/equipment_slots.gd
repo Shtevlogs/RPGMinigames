@@ -1,5 +1,5 @@
 class_name EquipmentSlots
-extends RefCounted
+extends GameStateSerializable
 
 var rings: Array[Equipment] = []  # 2 slots
 var neck: Equipment = null  # 1 slot
@@ -62,3 +62,66 @@ func duplicate() -> EquipmentSlots:
     for item in class_specific:
         dup.class_specific.append(item.duplicate() if item != null else null)
     return dup
+
+func serialize() -> Dictionary:
+    """Serialize equipment slots to dictionary."""
+    var data: Dictionary = {
+        "rings": [],
+        "neck": {},
+        "armor": {},
+        "head": {},
+        "class_specific": []
+    }
+    
+    for ring in rings:
+        data["rings"].append(ring.serialize() if ring != null else {})
+    
+    data["neck"] = neck.serialize() if neck != null else {}
+    data["armor"] = armor.serialize() if armor != null else {}
+    data["head"] = head.serialize() if head != null else {}
+    
+    for item in class_specific:
+        data["class_specific"].append(item.serialize() if item != null else {})
+    
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize equipment slots from dictionary."""
+    rings.clear()
+    for ring_data in data.get("rings", []):
+        if ring_data is Dictionary and not ring_data.is_empty():
+            var ring: Equipment = Equipment.new()
+            ring.deserialize(ring_data)
+            rings.append(ring)
+        else:
+            rings.append(null)
+    
+    var neck_data = data.get("neck", {})
+    if neck_data is Dictionary and not neck_data.is_empty():
+        neck = Equipment.new()
+        neck.deserialize(neck_data)
+    else:
+        neck = null
+    
+    var armor_data = data.get("armor", {})
+    if armor_data is Dictionary and not armor_data.is_empty():
+        armor = Equipment.new()
+        armor.deserialize(armor_data)
+    else:
+        armor = null
+    
+    var head_data = data.get("head", {})
+    if head_data is Dictionary and not head_data.is_empty():
+        head = Equipment.new()
+        head.deserialize(head_data)
+    else:
+        head = null
+    
+    class_specific.clear()
+    for item_data in data.get("class_specific", []):
+        if item_data is Dictionary and not item_data.is_empty():
+            var item: Equipment = Equipment.new()
+            item.deserialize(item_data)
+            class_specific.append(item)
+        else:
+            class_specific.append(null)

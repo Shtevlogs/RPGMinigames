@@ -6,7 +6,7 @@ const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigam
 func needs_target_selection() -> bool:
     return false  # WildMage doesn't need target selection
 
-func build_minigame_context(character: Character, _target: Variant) -> MinigameContext:
+func build_minigame_context(character: CharacterBattleEntity, _target: BattleEntity) -> MinigameContext:
     """Build context data for Wild Mage minigame."""
     var effective_attrs: Attributes = character.get_effective_attributes()
     var class_state = character.class_state
@@ -30,13 +30,13 @@ func build_minigame_context(character: Character, _target: Variant) -> MinigameC
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/wild_mage_minigame.tscn"
 
-func apply_attack_effects(_attacker: Character, _target: EnemyData, base_damage: int) -> int:
+func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
     """Wild Mage attack effects: pre-draw a card for next minigame."""
     # TODO: Track pre-drawn card state for next minigame
     # For now, stubbed
     return base_damage
 
-func format_minigame_result(character: Character, result: MinigameResult) -> Array[String]:
+func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Wild Mage minigame results for logging."""
     # Use minigame's format_result() method if available
     # Otherwise, fall back to basic formatting
@@ -73,6 +73,6 @@ func format_minigame_result(character: Character, result: MinigameResult) -> Arr
     
     return log_entries
 
-func get_ability_target(_character: Character, _result: MinigameResult) -> Variant:
+func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     """WildMage may hit all enemies/allies, so return null (target should be provided)."""
     return null

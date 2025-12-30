@@ -33,7 +33,7 @@ func update_display() -> void:
     # Update party information (placeholder)
     _update_party_display(run.party)
 
-func _update_party_display(party: Array[Character]) -> void:
+func _update_party_display(party: Array[CharacterBattleEntity]) -> void:
     # Clear existing party info
     for child in party_info_container.get_children():
         child.queue_free()

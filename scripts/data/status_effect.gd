@@ -1,10 +1,10 @@
 class_name StatusEffect
-extends RefCounted
+extends GameStateSerializable
 
 var duration: int = 0  # turns remaining
 var stacks: int = 1
 var magnitude: float = 1.0  # For scaling effects
-var target: Variant = null  # Reference to the entity (Character or EnemyData) this effect is applied to
+var target: BattleEntity = null  # Reference to the entity (CharacterBattleEntity or EnemyBattleEntity) this effect is applied to
 
 # Virtual methods to be overridden by subclasses
 func get_effect_name() -> String:
@@ -24,9 +24,9 @@ func _matches_existing_effect(existing: StatusEffect) -> bool:
     # Returns true if the existing effect should be considered the same type as this effect
     return existing.get_script() == get_script()
 
-func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> void:
+func on_apply(p_target: BattleEntity, status_effects_array: Array[StatusEffect]) -> void:
     # Called when effect is applied to a target
-    # p_target: The entity (Character or EnemyData) this effect is being applied to
+    # p_target: The entity (CharacterBattleEntity or EnemyBattleEntity) this effect is being applied to
     # status_effects_array: The array of status effects on the target (for finding matches and appending)
     # Sets target reference, finds matching existing effect, updates it or appends self
     target = p_target
@@ -49,13 +49,19 @@ func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> v
         # If not found, append this effect to the array
         status_effects_array.append(self)
 
-func on_tick(_combatant: Variant = null) -> Dictionary:
+func on_tick(_battle_state: BattleState) -> void:
     # Called at start of each turn
-    # _combatant: The entity (Character or EnemyData) - can use target property instead
-    # Returns Dictionary with effects to apply (damage, etc.)
-    # Return {"remove": true} to remove effect after processing
-    # Note: Use target property if _combatant is null for backward compatibility
-    return {}
+    # _battle_state: The current battle state, providing access to battle context
+    # Effects should apply their changes directly (e.g., target.take_damage())
+    # Default implementation does nothing
+    pass
+
+func on_remove(_battle_state: BattleState) -> void:
+    # Called when effect is removed (expired, death, or forced removal)
+    # _battle_state: The current battle state, providing access to battle context
+    # Allows effects to perform cleanup logic
+    # Default implementation does nothing
+    pass
 
 func on_modify_attributes(_attributes: Attributes) -> void:
     # Called when calculating effective attributes
@@ -82,3 +88,19 @@ func duplicate() -> StatusEffect:
     # Create a copy of this effect
     push_error("duplicate() must be overridden in subclass")
     return null
+
+func serialize() -> Dictionary:
+    """Serialize status effect to dictionary."""
+    var data: Dictionary = {
+        "type": get_effect_name().to_lower(),
+        "duration": duration,
+        "stacks": stacks,
+        "magnitude": magnitude
+    }
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize status effect from dictionary."""
+    duration = data.get("duration", 0)
+    stacks = data.get("stacks", 1)
+    magnitude = data.get("magnitude", 1.0)

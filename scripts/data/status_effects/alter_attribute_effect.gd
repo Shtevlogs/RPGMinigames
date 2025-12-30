@@ -26,7 +26,7 @@ func _matches_existing_effect(existing: StatusEffect) -> bool:
     var existing_alter: AlterAttributeEffect = existing as AlterAttributeEffect
     return existing_alter.attribute_name == attribute_name
 
-func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> void:
+func on_apply(p_target: BattleEntity, status_effects_array: Array[StatusEffect]) -> void:
     # Call parent to handle matching and appending
     super.on_apply(p_target, status_effects_array)
     
@@ -46,8 +46,13 @@ func on_apply(p_target: Variant, status_effects_array: Array[StatusEffect]) -> v
         # Update duration to the longer of the two
         existing_effect.duration = max(existing_effect.duration, duration)
 
-func on_tick(_combatant: Variant = null) -> Dictionary:
-    return {}  # No turn-based effects, attribute alteration is passive
+func on_tick(_battle_state: BattleState) -> void:
+    # No turn-based effects, attribute alteration is passive (handled via on_modify_attributes)
+    pass
+
+func on_remove(_battle_state: BattleState) -> void:
+    # No cleanup needed - attribute restoration handled by duration expiration
+    pass
 
 func on_modify_attributes(attributes: Attributes) -> void:
     # Modify the specified attribute by the alteration amount
@@ -84,3 +89,17 @@ func duplicate() -> StatusEffect:
     dup.stacks = stacks
     dup.magnitude = magnitude
     return dup
+
+func serialize() -> Dictionary:
+    """Serialize alter attribute effect to dictionary."""
+    var data: Dictionary = super.serialize()
+    data["class"] = "alter_attribute"
+    data["attribute_name"] = attribute_name
+    data["alteration_amount"] = alteration_amount
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize alter attribute effect from dictionary."""
+    super.deserialize(data)
+    attribute_name = data.get("attribute_name", "")
+    alteration_amount = data.get("alteration_amount", 0)

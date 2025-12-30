@@ -490,7 +490,7 @@ func _calculate_damage(completion: float, is_event_activated: bool, is_mega_burs
     
     return int(base_damage * damage_multiplier * luck_multiplier)
 
-static func build_context(_character: Character, _target: Variant) -> Dictionary:
+static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
     """Build context data for Time Wizard minigame."""
     # This is handled by TimeWizardBehavior.build_minigame_context()
     # This method exists for consistency with other minigames

@@ -267,5 +267,20 @@ Effects should apply changes directly:
 
 ## Status
 
-Pending (Depends on refactor_01)
+✅ **Completed**
+
+All requirements have been implemented:
+- ✅ StatusEffect.on_tick() signature changed to accept BattleState and return void
+- ✅ StatusEffect.on_remove() method added with BattleState parameter
+- ✅ StatusEffectManager.tick_status_effects() updated to accept BattleState and return void
+- ✅ Dictionary accumulation removed from StatusEffectManager
+- ✅ StatusEffectManager.clear_effects() updated to accept BattleState and call on_remove()
+- ✅ All concrete status effects updated (BurnEffect, SilenceEffect, TauntEffect, AlterAttributeEffect, BerserkEffect)
+- ✅ BurnEffect applies damage directly and handles logging through BattleState
+- ✅ BattleEntity.tick_status_effects() signature updated
+- ✅ Combat system updated to pass battle_state and detect health changes for UI updates
+- ✅ Death handling updated to pass battle_state to clear_effects()
+- ✅ BattleState.combat_log property added for effects to use for logging
+- ✅ BaseClassBehavior.battle_state property added for behaviors to access battle state
+- ✅ BerserkerBehavior updated to use battle_state property for on_remove() calls
 

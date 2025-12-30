@@ -1,13 +1,14 @@
 class_name BattleState
-extends RefCounted
+extends GameStateSerializable
 
 var turn_order: Array[TurnOrderEntry] = []
 var current_turn_index: int = 0
-var party_states: Array[EntityBattleState] = []
-var enemy_states: Array[EntityBattleState] = []
+var party_states: Array[BattleEntity] = []
+var enemy_states: Array[BattleEntity] = []
 var minigame_state: MinigameBattleState = null
 var encounter_id: String = ""
 var turn_count: int = 0
+var combat_log: CombatLog = null  # Reference to CombatLog for status effects to use for logging
 
 func serialize() -> Dictionary:
     """Serialize battle state to dictionary for save system."""
@@ -30,14 +31,14 @@ func serialize() -> Dictionary:
     
     # Serialize party states
     var party_states_data: Array[Dictionary] = []
-    for state in party_states:
-        party_states_data.append(state.serialize())
+    for entity in party_states:
+        party_states_data.append(entity.serialize())
     data["party_states"] = party_states_data
     
     # Serialize enemy states
     var enemy_states_data: Array[Dictionary] = []
-    for state in enemy_states:
-        enemy_states_data.append(state.serialize())
+    for entity in enemy_states:
+        enemy_states_data.append(entity.serialize())
     data["enemy_states"] = enemy_states_data
     
     # Serialize minigame state if present
@@ -54,11 +55,26 @@ func deserialize(data: Dictionary) -> void:
     turn_count = data.get("turn_count", 0)
     current_turn_index = data.get("current_turn_index", 0)
     
-    # Turn order and entity states would need to be reconstructed
-    # from entity references - this is handled by combat system
-    turn_order.clear()
+    # Deserialize party states
     party_states.clear()
+    var party_states_data: Array = data.get("party_states", [])
+    for entity_data in party_states_data:
+        if entity_data is Dictionary:
+            var character: CharacterBattleEntity = CharacterBattleEntity.new()
+            character.deserialize(entity_data)
+            party_states.append(character)
+    
+    # Deserialize enemy states
     enemy_states.clear()
+    var enemy_states_data: Array = data.get("enemy_states", [])
+    for entity_data in enemy_states_data:
+        if entity_data is Dictionary:
+            var enemy: EnemyBattleEntity = EnemyBattleEntity.new()
+            enemy.deserialize(entity_data)
+            enemy_states.append(enemy)
+    
+    # Turn order will be reconstructed by combat system from entity references
+    turn_order.clear()
     
     # Deserialize minigame state if present
     var minigame_data = data.get("minigame_state", null)

@@ -17,7 +17,7 @@ signal currency_changed(new_amount: int)
 func _ready() -> void:
     load_persistent_data()
 
-func start_new_run(party: Array[Character]) -> void:
+func start_new_run(party: Array[CharacterBattleEntity]) -> void:
     current_run = RunState.new()
     current_run.party = party
     current_run.run_start_time = Time.get_ticks_msec() / 1000.0

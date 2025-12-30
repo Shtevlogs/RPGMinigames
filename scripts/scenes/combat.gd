@@ -8,7 +8,6 @@ const TAUNT_EFFECT = preload("res://scripts/data/status_effects/taunt_effect.gd"
 const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
 const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
 const BATTLE_STATE = preload("res://scripts/data/battle_state.gd")
-const ENTITY_BATTLE_STATE = preload("res://scripts/data/entity_battle_state.gd")
 const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
 const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
 const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
@@ -31,7 +30,7 @@ var turn_order: Array[TurnOrderEntry] = []  # Will contain turn order entries (s
 var current_turn_index: int = 0  # Synced from battle_state
 var is_selecting_target: bool = false  # State for target selection
 var pending_attacker: BattleEntity = null  # BattleEntity waiting to attack
-var pending_ability_character: Character = null  # Character waiting to use ability
+var pending_ability_character: CharacterBattleEntity = null  # CharacterBattleEntity waiting to use ability
 var current_modal: Control = null  # Current open modal (MinigameModal)
 var current_ability_target: BattleEntity = null  # Target for current ability
 var is_input_blocked: bool = false  # Input blocking flag
@@ -118,7 +117,7 @@ func display_enemies() -> void:
     
     # Display enemies using formation positions
     for i in range(current_encounter.enemy_composition.size()):
-        var enemy: EnemyData = current_encounter.enemy_composition[i]
+        var enemy: EnemyBattleEntity = current_encounter.enemy_composition[i]
         var enemy_ui: Node = preload("res://ui/enemy_display.tscn").instantiate()
         
         # Cast to EnemyDisplay to access methods
@@ -159,7 +158,7 @@ func _on_attack_pressed() -> void:
         print("Not a player character's turn")
         return
     
-    var attacker: Character = current_combatant as Character
+    var attacker: CharacterBattleEntity = current_combatant as CharacterBattleEntity
     if not attacker.is_alive():
         print("Attacker is dead")
         return
@@ -191,9 +190,9 @@ func _on_ability_pressed() -> void:
         print("Not a player character's turn")
         return
     
-    var character: Character = current_combatant as Character
+    var character: CharacterBattleEntity = current_combatant as CharacterBattleEntity
     if not character.is_alive():
-        print("Character is dead")
+        print("CharacterBattleEntity is dead")
         return
     
     # Check if modal is already open
@@ -308,24 +307,26 @@ func _initialize_battle_state() -> void:
     if current_encounter != null:
         battle_state.encounter_id = current_encounter.encounter_id
     
-    # Initialize party states
+    # Initialize party states (store references to entities)
     battle_state.party_states.clear()
     if GameManager.current_run != null:
         for character in GameManager.current_run.party:
-            var char_state: EntityBattleState = ENTITY_BATTLE_STATE.new()
-            char_state.from_entity(character)
-            battle_state.party_states.append(char_state)
+            battle_state.party_states.append(character)
     
-    # Initialize enemy states
+    # Initialize enemy states (store references to entities)
     battle_state.enemy_states.clear()
     if current_encounter != null:
         for enemy in current_encounter.enemy_composition:
-            var enemy_state: EntityBattleState = ENTITY_BATTLE_STATE.new()
-            enemy_state.from_entity(enemy)
-            battle_state.enemy_states.append(enemy_state)
+            battle_state.enemy_states.append(enemy)
     
     battle_state.turn_count = 0
     battle_state.minigame_state = null
+    battle_state.combat_log = combat_log  # Provide combat log reference for status effects
+    
+    # Set battle_state on all registered behaviors
+    for behavior in MinigameRegistry.class_behaviors.values():
+        if behavior is BaseClassBehavior:
+            behavior.battle_state = battle_state
 
 func _update_battle_state() -> void:
     """Update battle state after each action."""
@@ -336,19 +337,9 @@ func _update_battle_state() -> void:
     turn_order = battle_state.turn_order.duplicate()
     current_turn_index = battle_state.current_turn_index
     
-    # Update party states
-    if GameManager.current_run != null:
-        for i in range(min(battle_state.party_states.size(), GameManager.current_run.party.size())):
-            var character: Character = GameManager.current_run.party[i]
-            var char_state: EntityBattleState = battle_state.party_states[i]
-            char_state.from_entity(character)
-    
-    # Update enemy states
-    if current_encounter != null:
-        for i in range(min(battle_state.enemy_states.size(), current_encounter.enemy_composition.size())):
-            var enemy: EnemyData = current_encounter.enemy_composition[i]
-            var enemy_state: EntityBattleState = battle_state.enemy_states[i]
-            enemy_state.from_entity(enemy)
+    # Party and enemy states are stored as references to the live entities
+    # No need to sync - they're the same objects
+    # This method is kept for compatibility but entities are already in sync
 
 func _sync_battle_state_to_entities() -> void:
     """Sync battle state changes back to entities."""
@@ -406,20 +397,20 @@ func _show_encounter_message() -> void:
 
 func _highlight_current_turn(entry: TurnOrderEntry) -> void:
     """Highlight current turn combatant with delay."""
-    if entry.is_party:
-        var character: Character = entry.combatant as Character
-        if character != null:
-            _highlight_party_member(character, true)
-            await DelayManager.wait(DelayManager.TURN_HIGHLIGHT_DURATION)
+    var combatant: BattleEntity = entry.combatant
+    if combatant == null:
+        return
+    
+    if combatant.is_party_member():
+        _highlight_party_member(combatant as CharacterBattleEntity, true)
+        await DelayManager.wait(DelayManager.TURN_HIGHLIGHT_DURATION)
     else:
-        var enemy: EnemyData = entry.combatant as EnemyData
-        if enemy != null:
-            _highlight_enemy(enemy, true)
-            await DelayManager.wait(DelayManager.TURN_HIGHLIGHT_DURATION)
-            # Remove highlight after delay for enemies
-            _highlight_enemy(enemy, false)
+        _highlight_enemy(combatant as EnemyBattleEntity, true)
+        await DelayManager.wait(DelayManager.TURN_HIGHLIGHT_DURATION)
+        # Remove highlight after delay for enemies
+        _highlight_enemy(combatant as EnemyBattleEntity, false)
 
-func _highlight_party_member(character: Character, highlight: bool) -> void:
+func _highlight_party_member(character: CharacterBattleEntity, highlight: bool) -> void:
     """Highlight party member with border (persistent for party turns)."""
     for child in party_container.get_children():
         if child is CharacterDisplay:
@@ -427,7 +418,7 @@ func _highlight_party_member(character: Character, highlight: bool) -> void:
             if char_display.character == character:
                 char_display.set_highlighted(highlight)
 
-func _highlight_enemy(enemy: EnemyData, highlight: bool) -> void:
+func _highlight_enemy(enemy: EnemyBattleEntity, highlight: bool) -> void:
     """Highlight enemy with glow effect (temporary for enemy turns)."""
     for child in enemy_container.get_children():
         if child is EnemyDisplay:
@@ -523,18 +514,9 @@ func _sort_turn_order(a: TurnOrderEntry, b: TurnOrderEntry) -> bool:
         return a.turn_value < b.turn_value
     
     # If turn values are equal, sort by speed (higher speed first)
-    var a_speed: int = 0
-    var b_speed: int = 0
-    
-    if a.is_party:
-        a_speed = (a.combatant as Character).get_effective_attributes().speed
-    else:
-        a_speed = (a.combatant as EnemyData).attributes.speed
-    
-    if b.is_party:
-        b_speed = (b.combatant as Character).get_effective_attributes().speed
-    else:
-        b_speed = (b.combatant as EnemyData).attributes.speed
+    # Use get_effective_attributes() from base BattleEntity class
+    var a_speed: int = a.combatant.get_effective_attributes().speed
+    var b_speed: int = b.combatant.get_effective_attributes().speed
     
     return a_speed > b_speed
 
@@ -641,26 +623,19 @@ func _process_current_turn() -> void:
     # Highlight current turn with delay
     await _highlight_current_turn(current_entry)
     
-    # Process status effects at start of turn
-    if current_entry.is_party:
-        var character: Character = current_combatant as Character
-        if character != null and character.is_alive():
-            _process_combatant_status_effects(character, true)
-    else:
-        var enemy: EnemyData = current_combatant as EnemyData
-        if enemy != null and enemy.is_alive():
-            _process_combatant_status_effects(enemy, false)
+    # Process status effects at start of turn (unified for all combatants)
+    if current_combatant != null and current_combatant.is_alive():
+        _process_combatant_status_effects(current_combatant)
     
     # If it's an enemy's turn, execute their attack automatically
     if not current_entry.is_party:
-        var enemy: EnemyData = current_entry.combatant as EnemyData
-        if enemy != null and enemy.is_alive():
+        if current_combatant != null and current_combatant.is_alive():
             # Enemy highlight animation with delay
             await DelayManager.wait(DelayManager.ENEMY_ACTION_ANIMATION_DURATION)
-            execute_enemy_attack(enemy)
+            execute_enemy_attack(current_combatant as EnemyBattleEntity)
     else:
         # Enable action buttons for player turn
-        var character: Character = current_combatant as Character
+        var character: CharacterBattleEntity = current_combatant as CharacterBattleEntity
         if character != null and character.is_alive():
             attack_button.disabled = false
             item_button.disabled = false
@@ -734,7 +709,7 @@ func _create_turn_order_entry_ui(entry: TurnOrderEntry, is_current: bool) -> Con
     return container
 
 # Target Selection System
-func start_target_selection(attacker: Character) -> void:
+func start_target_selection(attacker: CharacterBattleEntity) -> void:
     """Start target selection mode for player attack."""
     # Animate party displays down and close action menu with delays
     await _animate_party_displays_down()
@@ -780,7 +755,7 @@ func _update_enemy_selectability(selectable: bool) -> void:
                 enemy_display.set_selectable(false)
 
 # Ability Target Selection
-func start_ability_target_selection(character: Character) -> void:
+func start_ability_target_selection(character: CharacterBattleEntity) -> void:
     """Start target selection mode for ability."""
     # Animate party displays down and close action menu with delays
     await _animate_party_displays_down()
@@ -805,7 +780,7 @@ func _needs_target_selection(class_type: String) -> bool:
     return behavior.needs_target_selection()
 
 # Minigame Modal System
-func open_minigame_modal(character: Character, target: BattleEntity) -> void:
+func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity) -> void:
     """Open minigame modal for the given character."""
     if current_modal != null:
         push_warning("Modal already open")
@@ -860,7 +835,7 @@ func open_minigame_modal(character: Character, target: BattleEntity) -> void:
     if combat_log != null:
         combat_log.add_entry("%s uses ability" % character.display_name, combat_log.EventType.ABILITY)
 
-func _build_minigame_context(character: Character, target: BattleEntity) -> Dictionary:
+func _build_minigame_context(character: CharacterBattleEntity, target: BattleEntity) -> Dictionary:
     """Build context dictionary for minigame (for backward compatibility with modal)."""
     # Get typed context from behavior
     var behavior = MinigameRegistry.get_behavior(character.class_type)
@@ -934,14 +909,14 @@ func _on_minigame_completed(result: MinigameResult) -> void:
     
     # Get character from current turn
     var current_combatant = get_current_turn_combatant()
-    if current_combatant == null or not (current_combatant is Character):
+    if current_combatant == null or not (current_combatant is CharacterBattleEntity):
         push_error("No valid character for minigame result")
         if current_modal != null:
             await close_minigame_modal()
         unblock_input()
         return
     
-    var character: Character = current_combatant as Character
+    var character: CharacterBattleEntity = current_combatant as CharacterBattleEntity
     
     # Get stored target
     var target: Variant = current_ability_target
@@ -964,7 +939,7 @@ func _on_minigame_completed(result: MinigameResult) -> void:
     # Advance turn
     advance_turn()
 
-func _apply_minigame_result(character: Character, result: MinigameResult, target: BattleEntity) -> void:
+func _apply_minigame_result(character: CharacterBattleEntity, result: MinigameResult, target: BattleEntity) -> void:
     """Apply minigame result effects to combat."""
     if result == null:
         return
@@ -988,12 +963,12 @@ func _apply_minigame_result(character: Character, result: MinigameResult, target
                 _update_party_displays()
                 # Check if target died
                 if not target.is_alive():
-                    _handle_character_death(target as Character)
+                    _handle_character_death(target as CharacterBattleEntity)
             else:
                 _update_enemy_displays()
                 # Check if target died
                 if not target.is_alive():
-                    _handle_enemy_death(target as EnemyData)
+                    _handle_enemy_death(target as EnemyBattleEntity)
     
     # Apply effects
     for effect_dict in result.effects:
@@ -1003,7 +978,7 @@ func _apply_minigame_result(character: Character, result: MinigameResult, target
     _update_party_displays()
     _update_enemy_displays()
 
-func _log_minigame_result(character: Character, result: MinigameResult) -> void:
+func _log_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> void:
     """Add combat log entries for minigame results based on character class."""
     if combat_log == null or result == null:
         return
@@ -1017,37 +992,38 @@ func _log_minigame_result(character: Character, result: MinigameResult) -> void:
 
 # Old class-specific logging functions removed - now handled by behavior system
 
-func _get_ability_target(character: Character, result: MinigameResult) -> BattleEntity:
+func _get_ability_target(character: CharacterBattleEntity, result: MinigameResult) -> BattleEntity:
     """Get the target for the ability based on character class."""
     var behavior = MinigameRegistry.get_behavior(character.class_type)
     if behavior != null:
         return behavior.get_ability_target(character, result)
     return null  # Target should be provided from minigame context
 
-func _process_combatant_status_effects(combatant: BattleEntity, _is_party: bool) -> void:
+func _process_combatant_status_effects(combatant: BattleEntity) -> void:
     """Process status effects for a combatant at the start of their turn."""
-    var tick_result: Dictionary = combatant.tick_status_effects()
+    # Store health before processing to detect changes
+    var health_before: int = combatant.health.current
     
-    # Apply damage from status effects
-    if tick_result.has("damage") and tick_result["damage"] > 0:
-        var damage: int = tick_result["damage"]
-        var actual_damage: int = combatant.take_damage(damage)
-        if combat_log != null:
-            combat_log.add_entry("%s takes %d damage from status effects!" % [combatant.display_name, actual_damage], combat_log.EventType.STATUS_EFFECT)
-        
+    # Process status effects - effects apply their changes directly
+    if battle_state != null:
+        combatant.tick_status_effects(battle_state)
+    
+    # Check if health changed (effects may have applied damage)
+    var health_after: int = combatant.health.current
+    if health_before != health_after:
         # Update UI based on combatant type
         if combatant.is_party_member():
             _update_party_displays()
             # Check if character died
             if not combatant.is_alive():
-                _handle_character_death(combatant as Character)
+                _handle_character_death(combatant as CharacterBattleEntity)
         else:
             _update_enemy_displays()
             # Check if enemy died
             if not combatant.is_alive():
-                _handle_enemy_death(combatant as EnemyData)
+                _handle_enemy_death(combatant as EnemyBattleEntity)
 
-func _apply_effect(effect_dict: Dictionary, source: Character) -> void:
+func _apply_effect(effect_dict: Dictionary, source: CharacterBattleEntity) -> void:
     """Apply a single effect from minigame result."""
     var effect_type: String = effect_dict.get("type", "")
     var effect_class_name: String = effect_dict.get("class", "")
@@ -1107,7 +1083,7 @@ func close_minigame_modal() -> void:
         # Wait for close animation
         await DelayManager.wait(DelayManager.MINIGAME_CLOSE_BEAT_DURATION)
 
-func _on_enemy_target_selected(enemy: EnemyData) -> void:
+func _on_enemy_target_selected(enemy: EnemyBattleEntity) -> void:
     """Handle enemy target selection for player attack or ability."""
     if not is_selecting_target:
         return
@@ -1115,7 +1091,7 @@ func _on_enemy_target_selected(enemy: EnemyData) -> void:
     # Check if this is for an ability
     if pending_ability_character != null:
         # Store reference before cancel_target_selection() nulls it
-        var ability_character: Character = pending_ability_character
+        var ability_character: CharacterBattleEntity = pending_ability_character
         
         # Validate target
         if enemy == null or not enemy.is_alive():
@@ -1138,7 +1114,7 @@ func _on_enemy_target_selected(enemy: EnemyData) -> void:
         cancel_target_selection()
         return
     
-    var attacker: Character = pending_attacker as Character
+    var attacker: CharacterBattleEntity = pending_attacker as CharacterBattleEntity
     
     # Validate target
     if enemy == null or not enemy.health.is_alive():
@@ -1158,7 +1134,7 @@ func _on_enemy_target_selected(enemy: EnemyData) -> void:
     await execute_player_attack(attacker, enemy)
 
 # Player Attack Implementation
-func execute_player_attack(attacker: Character, target: EnemyData) -> void:
+func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleEntity) -> void:
     """Execute a player character's basic attack."""
     if attacker == null or target == null:
         return
@@ -1217,7 +1193,7 @@ func execute_player_attack(attacker: Character, target: EnemyData) -> void:
     # Advance turn
     advance_turn()
 
-func _shake_party_display(_character: Character) -> void:
+func _shake_party_display(_character: CharacterBattleEntity) -> void:
     """Shake party member display during action execution."""
     # TODO: Implement actual shake animation
     # For now, just wait for delay
@@ -1230,7 +1206,7 @@ func _flash_target(_target: BattleEntity) -> void:
     await DelayManager.wait(0.1)
 
 # Enemy Attack Implementation
-func execute_enemy_attack(attacker: EnemyData) -> void:
+func execute_enemy_attack(attacker: EnemyBattleEntity) -> void:
     """Execute an enemy's basic attack."""
     if attacker == null:
         return
@@ -1239,14 +1215,15 @@ func execute_enemy_attack(attacker: EnemyData) -> void:
         return
     
     # Select target (AI targeting)
-    var target: Character = _select_enemy_target()
+    var target: CharacterBattleEntity = _select_enemy_target()
     if target == null:
         print("No valid target for enemy attack")
         advance_turn()
         return
     
-    # Calculate damage from Power attribute
-    var damage: int = attacker.attributes.power
+    # Calculate damage from Power attribute (using effective attributes to account for status effects)
+    var effective_attrs: Attributes = attacker.get_effective_attributes()
+    var damage: int = effective_attrs.power
     
     # Apply damage
     var actual_damage: int = target.take_damage(damage)
@@ -1275,13 +1252,13 @@ func execute_enemy_attack(attacker: EnemyData) -> void:
     # Advance turn
     advance_turn()
 
-func _select_enemy_target() -> Character:
+func _select_enemy_target() -> CharacterBattleEntity:
     """AI target selection: prioritize taunt, otherwise random alive party member."""
     if GameManager.current_run == null:
         return null
     
-    var alive_party: Array[Character] = []
-    var taunted_party: Array[Character] = []
+    var alive_party: Array[CharacterBattleEntity] = []
+    var taunted_party: Array[CharacterBattleEntity] = []
     
     # Find alive party members and check for taunt
     for character in GameManager.current_run.party:
@@ -1301,7 +1278,7 @@ func _select_enemy_target() -> Character:
     return null
 
 # Class-Specific Attack Effects
-func _apply_class_specific_attack_effects(attacker: Character, target: EnemyData, base_damage: int) -> int:
+func _apply_class_specific_attack_effects(attacker: CharacterBattleEntity, target: EnemyBattleEntity, base_damage: int) -> int:
     """Apply class-specific on-attack effects. Returns modified damage."""
     var behavior = MinigameRegistry.get_behavior(attacker.class_type)
     if behavior != null:
@@ -1331,7 +1308,7 @@ func _update_party_displays() -> void:
             char_display.update_display()
 
 # Death Handling
-func _handle_enemy_death(enemy: EnemyData) -> void:
+func _handle_enemy_death(enemy: EnemyBattleEntity) -> void:
     """Handle enemy death: remove from encounter and UI."""
     # Play death animation and sound
     SoundManager.play_sfx(SoundManager.SFX_ENEMY_DEATH)
@@ -1344,10 +1321,8 @@ func _handle_enemy_death(enemy: EnemyData) -> void:
         combat_log.add_entry("%s has been defeated!" % enemy.display_name, combat_log.EventType.DEATH)
     
     # Remove all status effects
-    if not enemy.status_manager.status_effects.is_empty():
-        enemy.status_manager.clear_effects()
-        if combat_log != null:
-            combat_log.add_entry("%s's status effects are removed" % enemy.display_name, combat_log.EventType.STATUS_EFFECT)
+    if battle_state != null:
+        enemy.status_manager.clear_effects(battle_state)
     
     # Remove from encounter composition
     if current_encounter != null:
@@ -1365,7 +1340,7 @@ func _handle_enemy_death(enemy: EnemyData) -> void:
     if current_encounter != null and current_encounter.enemy_composition.is_empty():
         complete_encounter()
 
-func _get_enemy_position(enemy: EnemyData) -> Vector2:
+func _get_enemy_position(enemy: EnemyBattleEntity) -> Vector2:
     """Get enemy position for VFX."""
     for child in enemy_container.get_children():
         if child is EnemyDisplay:
@@ -1374,17 +1349,15 @@ func _get_enemy_position(enemy: EnemyData) -> Vector2:
                 return enemy_display.global_position + enemy_display.size / 2
     return Vector2.ZERO
 
-func _handle_character_death(character: Character) -> void:
+func _handle_character_death(character: CharacterBattleEntity) -> void:
     """Handle character death: update UI and remove status effects."""
     # Log character death
     if combat_log != null:
         combat_log.add_entry("%s has been defeated!" % character.display_name, combat_log.EventType.DEATH)
     
     # Remove all status effects
-    if not character.status_manager.status_effects.is_empty():
-        character.status_manager.clear_effects()
-        if combat_log != null:
-            combat_log.add_entry("%s's status effects are removed" % character.display_name, combat_log.EventType.STATUS_EFFECT)
+    if battle_state != null:
+        character.status_manager.clear_effects(battle_state)
     
     # UI will update automatically via _update_party_displays()
     # Dead characters are automatically removed from turn order in _remove_dead_combatants()

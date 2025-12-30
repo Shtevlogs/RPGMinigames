@@ -274,5 +274,15 @@ In `scripts/scenes/combat.gd`:
 
 ## Status
 
-Pending
+✅ **Completed**
+
+All requirements have been implemented:
+- ✅ BattleEntity base class created with unified interface
+- ✅ Character refactored to CharacterBattleEntity extending BattleEntity
+- ✅ EnemyData refactored to EnemyBattleEntity extending BattleEntity
+- ✅ Combat system updated to use BattleEntity instead of Variant
+- ✅ Type checking removed, using unified interface methods
+- ✅ GameStateSerializable base class added for serialization
+- ✅ get_effective_attributes() functionality in base class
+- ✅ All combat logic unified to work with BattleEntity interface
 

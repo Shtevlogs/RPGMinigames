@@ -23,10 +23,10 @@ func _create_placeholder_encounter() -> void:
     # Create two rats with Power=0, all other stats=1
     var rat_attributes = Attributes.new(0, 1, 1, 1, 1)  # Power=0, others=1
     
-    var rat1 = EnemyData.new("rat", "Rat", rat_attributes)
+    var rat1 = EnemyBattleEntity.new("rat", "Rat", rat_attributes)
     rat1.enemy_type = "beast"
     
-    var rat2 = EnemyData.new("rat", "Rat", rat_attributes)
+    var rat2 = EnemyBattleEntity.new("rat", "Rat", rat_attributes)
     rat2.enemy_type = "beast"
     
     # Create the encounter
@@ -95,13 +95,13 @@ func _create_pool_encounters(pool_name: String, theme: String, difficulty: int, 
     var enemy_power: int = difficulty if not is_boss else difficulty + 2
     var enemy_attributes: Attributes = Attributes.new(enemy_power, 1, 1, 1, 1)
     
-    var enemies: Array[EnemyData] = []
+    var enemies: Array[EnemyBattleEntity] = []
     var formations: Array[Vector2] = []
     
     for i in range(enemy_count):
         var enemy_name: String = "Boss %s" % theme.capitalize() if is_boss else "%s Enemy %d" % [theme.capitalize(), i + 1]
         var enemy_id: String = "%s_%s_%d" % [pool_name, "boss" if is_boss else "enemy", i]
-        var enemy: EnemyData = EnemyData.new(enemy_id, enemy_name, enemy_attributes)
+        var enemy: EnemyBattleEntity = EnemyBattleEntity.new(enemy_id, enemy_name, enemy_attributes)
         enemy.enemy_type = "placeholder"
         enemies.append(enemy)
         formations.append(Vector2(100 + i * 150, 0))

@@ -311,7 +311,7 @@ func _trigger_berserk_state() -> void:
     # Increment stacks, capping at 10
     berserk_stacks = min(berserk_stacks + 1, 10)
 
-static func build_context(_character: Character, _target: Variant) -> Dictionary:
+static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
     """Build context data for Berserker minigame."""
     var class_state = _character.class_state
     

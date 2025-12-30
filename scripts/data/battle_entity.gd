@@ -1,11 +1,19 @@
 class_name BattleEntity
-extends RefCounted
+extends GameStateSerializable
+
+# Preload status effect classes for deserialization
+const BURN_EFFECT = preload("res://scripts/data/status_effects/burn_effect.gd")
+const SILENCE_EFFECT = preload("res://scripts/data/status_effects/silence_effect.gd")
+const TAUNT_EFFECT = preload("res://scripts/data/status_effects/taunt_effect.gd")
+const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
+const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
 
 var entity_id: String
 var display_name: String
 var attributes: Attributes
 var health: Health
 var status_manager: StatusEffectManager
+var position: Vector2 = Vector2.ZERO
 
 func _init(p_entity_id: String = "", p_display_name: String = "", p_attributes: Attributes = null):
     entity_id = p_entity_id
@@ -16,6 +24,7 @@ func _init(p_entity_id: String = "", p_display_name: String = "", p_attributes: 
     health = Health.new(max_hp, max_hp)
     # Initialize status effect manager
     status_manager = StatusEffectManager.new(self)
+    position = Vector2.ZERO
 
 func get_effective_attributes() -> Attributes:
     # Base implementation: applies status effect alterations only
@@ -36,8 +45,8 @@ var status_effects: Array[StatusEffect]:
 func add_status_effect(effect: StatusEffect) -> void:
     status_manager.add_status_effect(effect)
 
-func tick_status_effects() -> Dictionary:
-    return status_manager.tick_status_effects()
+func tick_status_effects(battle_state: BattleState) -> void:
+    status_manager.tick_status_effects(battle_state)
 
 func has_status_effect(effect_class: GDScript) -> bool:
     return status_manager.has_status_effect(effect_class)
@@ -55,3 +64,94 @@ func is_party_member() -> bool:
 func duplicate() -> BattleEntity:
     push_error("duplicate() must be implemented in subclass")
     return null
+
+func serialize() -> Dictionary:
+    """Serialize entity to dictionary for save system."""
+    var data: Dictionary = {
+        "entity_id": entity_id,
+        "display_name": display_name,
+        "attributes": attributes.serialize(),
+        "health": health.serialize(),
+        "status_effects": _serialize_status_effects(),
+        "position": {"x": position.x, "y": position.y}
+    }
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    """Deserialize entity from dictionary."""
+    entity_id = data.get("entity_id", "")
+    display_name = data.get("display_name", "")
+    
+    # Deserialize attributes
+    var attrs_data: Dictionary = data.get("attributes", {})
+    attributes = Attributes.new()
+    attributes.deserialize(attrs_data)
+    
+    # Deserialize health
+    var health_data: Dictionary = data.get("health", {})
+    var max_hp: int = health_data.get("max_hp", 10 + attributes.power * 5)
+    health = Health.new(max_hp, health_data.get("current", max_hp))
+    health.deserialize(health_data)
+    
+    # Deserialize position
+    var pos_data: Dictionary = data.get("position", {})
+    position = Vector2(pos_data.get("x", 0.0), pos_data.get("y", 0.0))
+    
+    # Reinitialize status manager (in case it wasn't initialized)
+    if status_manager == null:
+        status_manager = StatusEffectManager.new(self)
+    
+    # Deserialize status effects
+    _deserialize_status_effects(data.get("status_effects", []))
+
+func _serialize_status_effects() -> Array[Dictionary]:
+    """Serialize status effects to array of dictionaries."""
+    var effects_data: Array[Dictionary] = []
+    for effect in status_manager.status_effects:
+        # Use the effect's own serialize method
+        var effect_data: Dictionary = effect.serialize()
+        
+        # Add class identifier for deserialization
+        if effect is BurnEffect:
+            effect_data["class"] = "burn"
+        elif effect is SilenceEffect:
+            effect_data["class"] = "silence"
+        elif effect is TauntEffect:
+            effect_data["class"] = "taunt"
+        elif effect is AlterAttributeEffect:
+            effect_data["class"] = "alter_attribute"
+        elif effect is BerserkEffect:
+            effect_data["class"] = "berserk"
+        
+        effects_data.append(effect_data)
+    return effects_data
+
+func _deserialize_status_effects(effects_data: Array) -> void:
+    """Deserialize status effects from array of dictionaries."""
+    status_manager.status_effects.clear()
+    
+    for effect_data in effects_data:
+        if not effect_data is Dictionary:
+            continue
+        
+        var effect: StatusEffect = null
+        var effect_type: String = effect_data.get("type", "").to_lower()
+        var effect_class: String = effect_data.get("class", "").to_lower()
+        
+        # Determine effect class from class name or type and create instance
+        if effect_class == "burn" or effect_type == "burn":
+            effect = BURN_EFFECT.new()
+        elif effect_class == "silence" or effect_type == "silence":
+            effect = SILENCE_EFFECT.new()
+        elif effect_class == "taunt" or effect_type == "taunt":
+            effect = TAUNT_EFFECT.new()
+        elif effect_class == "alter_attribute" or effect_type.contains("alter"):
+            effect = ALTER_ATTRIBUTE_EFFECT.new()
+        elif effect_class == "berserk" or effect_type == "berserk":
+            effect = BERSERK_EFFECT.new()
+        
+        # Use the effect's deserialize method to restore state
+        if effect != null:
+            effect.deserialize(effect_data)
+            effect.target = self
+            status_manager.status_effects.append(effect)
