@@ -1,6 +1,8 @@
 class_name TimeWizardMinigame
 extends BaseMinigame
 
+const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
+
 # Time Wizard minigame - Minesweeper analogue with time-based mechanics
 # Core minesweeper mechanics with timeline events, time limit, and completion-based damage
 
@@ -70,13 +72,20 @@ func initialize_minigame() -> void:
         await get_tree().process_frame
         _setup_ui_references()
     
-    # Get context data
-    board_size = minigame_context.get("board_size", 4)
-    time_limit = minigame_context.get("time_limit", 10.0)
-    event_count = minigame_context.get("event_count", 1)
+    # Cast context to TimeWizardMinigameContext
+    var context = minigame_context as TimeWizardMinigameContext
+    if context == null:
+        push_error("Invalid context type for TimeWizardMinigame")
+        return
+    
+    # Get context data from typed context
+    board_size = context.board_size
+    time_limit = context.time_limit
+    event_count = context.event_count
     
     # TODO: Load board_state from context (pre-cleared squares from basic attacks)
     # EQUIPMENT HOOK: Board state persistence from basic attacks
+    # board_state is available as context.board_state
     
     # Initialize game state
     time_remaining = time_limit

@@ -1,6 +1,8 @@
 class_name BaseMinigame
 extends Control
 
+const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
+
 # Base class for all minigames
 # Provides common interface for minigame integration
 
@@ -8,18 +10,11 @@ signal minigame_completed(result: MinigameResult)
 
 var character: CharacterBattleEntity = null
 var target: Variant = null
-var minigame_context: Dictionary = {}
+var minigame_context: MinigameContext = null
 
 func _ready() -> void:
-    # Get context from StateManager only if not already set
-    # This allows context to be set directly (e.g., from modal)
-    if character == null:
-        var context: Dictionary = StateManager.get_minigame_context()
-        if not context.is_empty():
-            character = context.get("character")
-            target = context.get("target")
-            minigame_context = context.get("data", {})
-    
+    # Context should be set directly by modal
+    # StateManager fallback removed - context is now passed directly
     initialize_minigame()
 
 func initialize_minigame() -> void:

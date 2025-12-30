@@ -1,6 +1,8 @@
 class_name WildMageMinigame
 extends BaseMinigame
 
+const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
+
 # Wild Mage minigame - Poker-like card game implementation
 # Core poker mechanics with hand evaluation and discard system
 
@@ -82,14 +84,20 @@ func initialize_minigame() -> void:
         await get_tree().process_frame
         _setup_ui_references()
     
-    # Get context data
-    hand_size = minigame_context.get("hand_size", 4)
-    total_discards = minigame_context.get("discards_available", 0)
+    # Cast context to WildMageMinigameContext
+    var context = minigame_context as WildMageMinigameContext
+    if context == null:
+        push_error("Invalid context type for WildMageMinigame")
+        return
+    
+    # Get context data from typed context
+    hand_size = context.hand_size
+    total_discards = context.discards_available
     discard_limit = total_discards  # For now, discard limit equals total discards
     discards_used = 0
     
     # Stub: Pre-drawn card (ignore for now)
-    var _pre_drawn_card = minigame_context.get("pre_drawn_card", null)
+    var _pre_drawn_card = context.pre_drawn_card
     # EQUIPMENT HOOK: Pre-drawn card should be added to hand without counting toward hand size
     
     # Initialize deck

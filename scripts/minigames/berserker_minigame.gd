@@ -1,6 +1,8 @@
 class_name BerserkerMinigame
 extends BaseMinigame
 
+const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
+
 # Berserker minigame - Blackjack implementation
 # First pass: Core blackjack mechanics with stubbed advanced features
 
@@ -76,13 +78,16 @@ func initialize_minigame() -> void:
         await get_tree().process_frame
         _setup_ui_references()
     
-    # Get stubbed data from context
-    if minigame_context.has("effect_ranges"):
-        effect_ranges = minigame_context.get("effect_ranges", [])
-    if minigame_context.has("is_berserking"):
-        is_berserking = minigame_context.get("is_berserking", false)
-    if minigame_context.has("berserk_stacks"):
-        berserk_stacks = minigame_context.get("berserk_stacks", 0)
+    # Cast context to BerserkerMinigameContext
+    var context = minigame_context as BerserkerMinigameContext
+    if context == null:
+        push_error("Invalid context type for BerserkerMinigame")
+        return
+    
+    # Get data from typed context
+    effect_ranges = context.effect_ranges
+    is_berserking = context.is_berserking
+    berserk_stacks = context.berserk_stacks
     
     # Initialize deck
     _create_deck()

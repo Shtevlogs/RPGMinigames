@@ -1,6 +1,8 @@
 class_name MinigameModal
 extends Control
 
+const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
+
 # Modal container for minigames
 # Displays minigame as an overlay on combat scene
 
@@ -66,7 +68,7 @@ func _input(event: InputEvent) -> void:
     if event.is_action_pressed("ui_cancel"):
         close_modal()
 
-func load_minigame(minigame_scene_path: String, context: Dictionary) -> void:
+func load_minigame(minigame_scene_path: String, context: MinigameContext) -> void:
     """Load and display a minigame scene with the given context."""
     # Clear any existing minigame
     if minigame_instance != null:
@@ -88,9 +90,9 @@ func load_minigame(minigame_scene_path: String, context: Dictionary) -> void:
         return
     
     # Set context directly on minigame instance
-    minigame_instance.character = context.get("character")
-    minigame_instance.target = context.get("target", null)
-    minigame_instance.minigame_context = context.get("data", {})
+    minigame_instance.character = context.character
+    minigame_instance.target = context.target
+    minigame_instance.minigame_context = context
     
     # Add minigame to container
     var minigame_container: Control = get_node("ModalContainer/MinigameContainer")

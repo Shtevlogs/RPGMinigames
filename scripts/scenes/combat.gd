@@ -9,10 +9,6 @@ const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_
 const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
 const BATTLE_STATE = preload("res://scripts/data/battle_state.gd")
 const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
-const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
-const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
-const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
-const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
 const EFFECT_IDS = preload("res://scripts/data/effect_ids.gd")
 
 @onready var party_container: HBoxContainer = $PartyContainer
@@ -799,8 +795,15 @@ func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity)
         unblock_input()
         return
     
-    # Build context dictionary using behavior system
-    var context: Dictionary = _build_minigame_context(character, target)
+    # Build typed context using behavior system
+    var behavior = MinigameRegistry.get_behavior(character.class_type)
+    var context: MinigameContext = null
+    if behavior != null:
+        context = behavior.build_minigame_context(character, target)
+    else:
+        push_error("Failed to get behavior for class: " + character.class_type)
+        unblock_input()
+        return
     
     # Create modal instance programmatically
     current_modal = MinigameModalScript.new()
@@ -835,62 +838,7 @@ func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity)
     if combat_log != null:
         combat_log.add_entry("%s uses ability" % character.display_name, combat_log.EventType.ABILITY)
 
-func _build_minigame_context(character: CharacterBattleEntity, target: BattleEntity) -> Dictionary:
-    """Build context dictionary for minigame (for backward compatibility with modal)."""
-    # Get typed context from behavior
-    var behavior = MinigameRegistry.get_behavior(character.class_type)
-    var typed_context: MinigameContext = null
-    if behavior != null:
-        typed_context = behavior.build_minigame_context(character, target)
-    
-    # Convert typed context to dictionary for modal (backward compatibility)
-    var context: Dictionary = {
-        "character": character,
-        "target": target,
-        "data": {}
-    }
-    
-    if typed_context != null:
-        # Convert typed context to dictionary based on type
-        var context_class = typed_context.get_script()
-        if context_class == BERSERKER_MINIGAME_CONTEXT:
-            var berserker_context = typed_context as BerserkerMinigameContext
-            context["data"] = {
-                "effect_ranges": berserker_context.effect_ranges,
-                "is_berserking": berserker_context.is_berserking,
-                "berserk_stacks": berserker_context.berserk_stacks
-            }
-        elif context_class == MONK_MINIGAME_CONTEXT:
-            var monk_context = typed_context as MonkMinigameContext
-            context["data"] = {
-                "target_strategy": monk_context.target_strategy,
-                "enemy_cards": monk_context.enemy_cards,
-                "enemy_id": monk_context.enemy_id,
-                "redos_available": monk_context.redos_available
-            }
-        elif context_class == TIME_WIZARD_MINIGAME_CONTEXT:
-            var time_wizard_context = typed_context as TimeWizardMinigameContext
-            context["data"] = {
-                "board_state": time_wizard_context.board_state,
-                "board_size": time_wizard_context.board_size,
-                "time_limit": time_wizard_context.time_limit,
-                "event_count": time_wizard_context.event_count
-            }
-        elif context_class == WILD_MAGE_MINIGAME_CONTEXT:
-            var wild_mage_context = typed_context as WildMageMinigameContext
-            context["data"] = {
-                "pre_drawn_card": wild_mage_context.pre_drawn_card,
-                "hand_size": wild_mage_context.hand_size,
-                "discards_available": wild_mage_context.discards_available
-            }
-        else:
-            context["data"] = {}
-    else:
-        context["data"] = {}
-    
-    return context
-
-# Old class-specific context builders removed - now handled by behavior system
+# Context building is now handled directly by behavior classes - no conversion needed
 
 func _on_minigame_modal_closed() -> void:
     """Handle minigame modal closing."""

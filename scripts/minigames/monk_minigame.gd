@@ -1,6 +1,8 @@
 class_name MonkMinigame
 extends BaseMinigame
 
+const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
+
 # Monk minigame - Rock Paper Scissors implementation
 # Core RPS mechanics with enemy cards, win/loss/tie effects, and redo system
 
@@ -89,8 +91,14 @@ func initialize_minigame() -> void:
         await get_tree().process_frame
         _setup_ui_references()
     
-    # Get context data
-    redos_available = minigame_context.get("redos_available", 0)
+    # Cast context to MonkMinigameContext
+    var context = minigame_context as MonkMinigameContext
+    if context == null:
+        push_error("Invalid context type for MonkMinigame")
+        return
+    
+    # Get context data from typed context
+    redos_available = context.redos_available
     redos_used = 0
     player_move = ""
     selected_enemy_card = null
@@ -98,17 +106,17 @@ func initialize_minigame() -> void:
     game_complete = false
     
     # Generate enemy cards
-    _generate_enemy_cards()
+    _generate_enemy_cards(context)
     
     # Update UI
     _update_display()
 
-func _generate_enemy_cards() -> void:
+func _generate_enemy_cards(context: MonkMinigameContext) -> void:
     """Generate enemy RPS cards. Extensible for enemy-specific cards."""
     enemy_cards.clear()
     
     # EQUIPMENT HOOK: Check if enemy-specific cards are provided in context
-    var provided_cards: Array = minigame_context.get("enemy_cards", [])
+    var provided_cards: Array = context.enemy_cards
     if not provided_cards.is_empty():
         # Use provided cards (for future enemy-specific implementation)
         for card_data in provided_cards:
@@ -124,7 +132,7 @@ func _generate_enemy_cards() -> void:
         return
     
     # Default: Generate random cards based on card count
-    var target_strategy: int = minigame_context.get("target_strategy", 1)
+    var target_strategy: int = context.target_strategy
     if character != null:
         var effective_attrs: Attributes = character.get_effective_attributes()
         var card_count: int = max(1, target_strategy - effective_attrs.strategy)
