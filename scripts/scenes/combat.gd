@@ -91,29 +91,37 @@ func display_party() -> void:
     for child in party_container.get_children():
         child.queue_free()
     
-    # Display party members
-    if GameManager.current_run == null:
-        return
-    
-    for character in GameManager.current_run.party:
-        var char_ui: Node = preload("res://ui/character_display.tscn").instantiate()
-        char_ui.set_character(character)
-        party_container.add_child(char_ui)
+    # Display party members from BattleState (or GameManager if BattleState not initialized yet)
+    if battle_state != null and not battle_state.party_states.is_empty():
+        for character in battle_state.party_states:
+            var char_ui: Node = preload("res://ui/character_display.tscn").instantiate()
+            char_ui.set_character(character)
+            party_container.add_child(char_ui)
+    elif GameManager.current_run != null:
+        # Fallback for initialization before BattleState is created
+        for character in GameManager.current_run.party:
+            var char_ui: Node = preload("res://ui/character_display.tscn").instantiate()
+            char_ui.set_character(character)
+            party_container.add_child(char_ui)
 
 func display_enemies() -> void:
     # Clear existing
     clear_enemies()
     
-    # Check if encounter exists and has enemies
-    if current_encounter == null:
-        return
+    # Display enemies from BattleState (or Encounter if BattleState not initialized yet)
+    var enemies_to_display: Array[EnemyBattleEntity] = []
+    if battle_state != null and not battle_state.enemy_states.is_empty():
+        enemies_to_display = battle_state.enemy_states
+    elif current_encounter != null and not current_encounter.enemy_composition.is_empty():
+        # Fallback for initialization before BattleState is created
+        enemies_to_display = current_encounter.enemy_composition
     
-    if current_encounter.enemy_composition.is_empty():
+    if enemies_to_display.is_empty():
         return
     
     # Display enemies using formation positions
-    for i in range(current_encounter.enemy_composition.size()):
-        var enemy: EnemyBattleEntity = current_encounter.enemy_composition[i]
+    for i in range(enemies_to_display.size()):
+        var enemy: EnemyBattleEntity = enemies_to_display[i]
         var enemy_ui: Node = preload("res://ui/enemy_display.tscn").instantiate()
         
         # Cast to EnemyDisplay to access methods
@@ -124,7 +132,7 @@ func display_enemies() -> void:
             enemy_display.enemy_clicked.connect(_on_enemy_target_selected)
         
         # Position using formation coordinates
-        if i < current_encounter.enemy_formation.size():
+        if current_encounter != null and i < current_encounter.enemy_formation.size():
             enemy_ui.position = current_encounter.enemy_formation[i]
         else:
             # Fallback positioning if formation array is shorter than composition
@@ -452,9 +460,9 @@ func calculate_initial_turn_order() -> void:
     """Calculate initial turn order for all combatants at combat start."""
     turn_order.clear()
     
-    # Add party members to turn order
-    if GameManager.current_run != null:
-        for character in GameManager.current_run.party:
+    # Add party members to turn order from BattleState
+    if battle_state != null:
+        for character in battle_state.party_states:
             if character.is_alive():
                 var speed: int = character.get_effective_attributes().speed
                 var turn_value: int = _roll_turn_value(speed)
@@ -466,9 +474,9 @@ func calculate_initial_turn_order() -> void:
                 )
                 turn_order.append(entry)
     
-    # Add enemies to turn order
-    if current_encounter != null:
-        for enemy in current_encounter.enemy_composition:
+    # Add enemies to turn order from BattleState
+    if battle_state != null:
+        for enemy in battle_state.enemy_states:
             if enemy.is_alive():
                 var speed: int = enemy.get_effective_attributes().speed
                 var turn_value: int = _roll_turn_value(speed)
@@ -605,9 +613,15 @@ func _process_current_turn() -> void:
     if turn_order.is_empty() or current_turn_index >= turn_order.size():
         return
     
-    # Don't process turns if encounter is complete
-    if current_encounter != null and current_encounter.enemy_composition.is_empty():
-        return
+    # Don't process turns if encounter is complete (check BattleState)
+    if battle_state != null:
+        var has_alive_enemies: bool = false
+        for enemy in battle_state.enemy_states:
+            if enemy.is_alive():
+                has_alive_enemies = true
+                break
+        if not has_alive_enemies:
+            return
     
     var current_entry = turn_order[current_turn_index]
     var current_combatant = current_entry.combatant
@@ -1008,7 +1022,8 @@ func _on_enemy_target_selected(enemy: EnemyBattleEntity) -> void:
             print("Invalid target selected")
             return
         
-        if not current_encounter.enemy_composition.has(enemy):
+        # Validate target is in BattleState
+        if battle_state == null or not battle_state.enemy_states.has(enemy):
             print("Target not in current encounter")
             return
         
@@ -1031,7 +1046,8 @@ func _on_enemy_target_selected(enemy: EnemyBattleEntity) -> void:
         print("Invalid target selected")
         return
     
-    if not current_encounter.enemy_composition.has(enemy):
+    # Validate target is in BattleState
+    if battle_state == null or not battle_state.enemy_states.has(enemy):
         print("Target not in current encounter")
         return
     
@@ -1164,14 +1180,14 @@ func execute_enemy_attack(attacker: EnemyBattleEntity) -> void:
 
 func _select_enemy_target() -> CharacterBattleEntity:
     """AI target selection: prioritize taunt, otherwise random alive party member."""
-    if GameManager.current_run == null:
+    if battle_state == null:
         return null
     
     var alive_party: Array[CharacterBattleEntity] = []
     var taunted_party: Array[CharacterBattleEntity] = []
     
-    # Find alive party members and check for taunt
-    for character in GameManager.current_run.party:
+    # Find alive party members and check for taunt from BattleState
+    for character in battle_state.party_states:
         if character.is_alive():
             alive_party.append(character)
             if character.has_status_effect(TauntEffect):
@@ -1234,7 +1250,7 @@ func _handle_enemy_death(enemy: EnemyBattleEntity) -> void:
     if battle_state != null:
         enemy.status_manager.clear_effects(battle_state)
     
-    # Remove from encounter composition
+    # Remove from encounter composition (for cleanup)
     if current_encounter != null:
         current_encounter.enemy_composition.erase(enemy)
     
@@ -1246,9 +1262,15 @@ func _handle_enemy_death(enemy: EnemyBattleEntity) -> void:
                 child.queue_free()
                 break
     
-    # Check if encounter is complete (all enemies dead)
-    if current_encounter != null and current_encounter.enemy_composition.is_empty():
-        complete_encounter()
+    # Check if encounter is complete (all enemies dead) - check BattleState
+    if battle_state != null:
+        var has_alive_enemies: bool = false
+        for e in battle_state.enemy_states:
+            if e.is_alive():
+                has_alive_enemies = true
+                break
+        if not has_alive_enemies:
+            complete_encounter()
 
 func _get_enemy_position(enemy: EnemyBattleEntity) -> Vector2:
     """Get enemy position for VFX."""
@@ -1274,10 +1296,10 @@ func _handle_character_death(character: CharacterBattleEntity) -> void:
 
 func _is_party_wipe() -> bool:
     """Check if all party members are dead."""
-    if GameManager.current_run == null:
+    if battle_state == null:
         return true
     
-    for character in GameManager.current_run.party:
+    for character in battle_state.party_states:
         if character.is_alive():
             return false
     

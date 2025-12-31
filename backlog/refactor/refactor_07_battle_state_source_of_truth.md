@@ -282,5 +282,17 @@ battle_state.sync_entities_from_state()  # Update UI
 
 ## Status
 
-Pending
+Completed
+
+## Implementation Notes
+
+- BattleState is now the exclusive access point for all entities during combat
+- All `GameManager.current_run.party` accesses replaced with `battle_state.party_states`
+- All `current_encounter.enemy_composition` accesses replaced with `battle_state.enemy_states` for combat logic
+- Entities can be modified directly (e.g., `entity.take_damage()`) after accessing through BattleState
+- No wrapper methods needed - direct entity modification is fine
+- No sync methods needed - entities in BattleState are the source of truth
+- Initialization still uses GameManager/Encounter sources to populate BattleState (appropriate)
+- Display methods updated with fallback for initialization before BattleState is created
+- Encounter completion checks BattleState instead of Encounter composition
 

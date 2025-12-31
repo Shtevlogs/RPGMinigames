@@ -3,8 +3,8 @@ extends GameStateSerializable
 
 var turn_order: Array[TurnOrderEntry] = []
 var current_turn_index: int = 0
-var party_states: Array[BattleEntity] = []
-var enemy_states: Array[BattleEntity] = []
+var party_states: Array[CharacterBattleEntity] = []
+var enemy_states: Array[EnemyBattleEntity] = []
 var minigame_state: MinigameBattleState = null
 var encounter_id: String = ""
 var turn_count: int = 0
