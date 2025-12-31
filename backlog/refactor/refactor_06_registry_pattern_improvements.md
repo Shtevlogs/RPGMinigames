@@ -4,7 +4,7 @@
 
 ## Description
 
-Update `MinigameRegistry` to use GDScript types as dictionary keys instead of strings. This provides type safety and eliminates string-based lookups. `Character.class_type` should be changed from `String` to a GDScript reference.
+Update `MinigameRegistry` to use GDScript types as dictionary keys instead of strings. This provides type safety and eliminates string-based lookups. `CharacterBattleEntity.class_type` should be changed from `String` to a GDScript reference.
 
 **Design Philosophy**: Using types as keys provides compile-time safety and eliminates string matching. GDScript types can be used as dictionary keys, making the registry more robust and type-safe. This follows the principle of using types over strings wherever possible.
 
@@ -17,7 +17,7 @@ Update `MinigameRegistry` to use GDScript types as dictionary keys instead of st
 
 ### From ARCHITECTURE_PRIMER.md:
 - `MinigameRegistry` uses `String` keys for class types: `class_behaviors: Dictionary = {}` (class_type -> BaseClassBehavior)
-- `Character.class_type` is `String` (e.g., "Berserker", "Monk")
+- `CharacterBattleEntity.class_type` is `String` (e.g., "Berserker", "Monk")
 - Registry methods: `register_class(class_type: String, ...)`, `get_behavior(class_type: String)`
 - Current lookup: `class_behaviors.get(class_type, null)` where class_type is a string
 
@@ -43,10 +43,11 @@ Update `MinigameRegistry` to use GDScript types as dictionary keys instead of st
    - `get_behavior(class_type: String) -> BaseClassBehavior`
    - `get_minigame_scene_path(class_type: String) -> String`
 
-2. **Character.class_type**:
+2. **CharacterBattleEntity.class_type**:
    - Type: `String`
    - Values: "Berserker", "TimeWizard", "Monk", "WildMage"
    - Used for registry lookups
+   - Serialized as string in save files
 
 3. **Registry Usage**:
    - `MinigameRegistry.get_behavior(character.class_type)` - String lookup
@@ -78,10 +79,11 @@ Classes that need to be registered:
    - Update lookup methods to accept `GDScript` instead of `String`
    - Support GDScript types as keys
 
-2. **Character.class_type Updates**:
+2. **CharacterBattleEntity.class_type Updates**:
    - Change `class_type: String` to `class_type: GDScript`
    - Store class reference instead of string name
    - Update initialization to use class references
+   - Add serialization/deserialization helpers for string conversion (JSON compatibility)
 
 3. **Registry Registration**:
    - Register classes using GDScript types as keys
@@ -106,12 +108,21 @@ func get_behavior(class_type: GDScript) -> BaseClassBehavior:
     return class_behaviors.get(class_type, null)
 ```
 
-**Character**:
+**CharacterBattleEntity**:
 ```gdscript
 var class_type: GDScript  # Changed from String
 
 func _init(p_class_type: GDScript, ...):
     class_type = p_class_type
+
+func serialize() -> Dictionary:
+    var data = super.serialize()
+    data["class_type"] = MinigameRegistry.get_class_type_string(class_type)
+    return data
+
+func deserialize(data: Dictionary) -> void:
+    super.deserialize(data)
+    class_type = MinigameRegistry.get_class_type_from_string(data.get("class_type", ""))
 ```
 
 ## Implementation Plan
@@ -134,39 +145,58 @@ func _init(p_class_type: GDScript, ...):
    - No string matching needed
    - Type-safe lookups
 
-### Phase 2: Create Class Type Constants (Optional)
+### Phase 2: Create Helper Methods for Serialization
 
-1. **Option A: Use class_name directly**:
-   - Classes with `class_name` can be used directly
-   - Example: `BerserkerBehavior` (if it has class_name)
-   - Or use the behavior class itself
+1. **Add Helper Methods to MinigameRegistry**:
+   - `get_class_type_string(class_type: GDScript) -> String`: Convert GDScript type to string identifier for serialization/display
+   - `get_class_type_from_string(class_string: String) -> GDScript`: Convert string identifier back to GDScript type for deserialization
+   - Maintain reverse mapping dictionary for efficient lookups
+   - Used for save/load compatibility (JSON doesn't support GDScript types)
 
-2. **Option B: Create type constants**:
-   - Define constants for each class type
-   - Example: `const BERSERKER_TYPE = preload("res://scripts/class_behaviors/berserker_behavior.gd")`
-   - Use constants for registration and lookups
+2. **Implementation Pattern**:
+   ```gdscript
+   var class_type_to_string: Dictionary = {}  # GDScript -> String
+   var string_to_class_type: Dictionary = {}  # String -> GDScript
+   
+   func register_class(class_type: GDScript, behavior_class: GDScript, scene_path: String) -> void:
+       # ... existing registration ...
+       # Also register string mapping
+       var class_string = _derive_class_string(class_type)
+       class_type_to_string[class_type] = class_string
+       string_to_class_type[class_string] = class_type
+   ```
 
-3. **Recommended**: Use class_name types directly
-   - Simplest approach
-   - No constants needed
-   - Direct type references
+### Phase 2b: Type Choice Clarification
 
-### Phase 3: Update Character.class_type
+**Decision**: Use behavior class directly as the key type (e.g., `BerserkerBehavior`)
+- All behavior classes already have `class_name` declarations
+- Simplest approach - no constants needed
+- Direct type references provide compile-time safety
+- Example: `register_class(BerserkerBehavior, BerserkerBehavior, scene_path)`
 
-1. **Update `scripts/data/character.gd`**:
+### Phase 3: Update CharacterBattleEntity.class_type
+
+1. **Update `scripts/data/character_battle_entity.gd`**:
    - Change `var class_type: String` to `var class_type: GDScript`
    - Update `_init()` to accept `GDScript` instead of `String`
-   - Update default value handling
+   - Update default value handling (use `null` or require non-null)
 
-2. **Update Character Creation**:
+2. **Update Serialization/Deserialization**:
+   - **serialize()**: Convert GDScript type to string using `MinigameRegistry.get_class_type_string(class_type)`
+   - **deserialize()**: Convert string back to GDScript type using `MinigameRegistry.get_class_type_from_string(class_string)`
+   - Handle null/empty strings gracefully (return null or default type)
+
+3. **Update Character Creation**:
    - Pass class type reference instead of string
-   - Example: `Character.new(BerserkerBehavior, ...)` instead of `Character.new("Berserker", ...)`
-   - Update all character creation code
+   - Example: `CharacterBattleEntity.new(BerserkerBehavior, ...)` instead of `CharacterBattleEntity.new("Berserker", ...)`
+   - Update all character creation code:
+     - `scripts/scenes/party_selection.gd` - Update character generation
+     - Any other files that create characters
 
-3. **Update Name Handling**:
-   - May need to derive name from class type
-   - Or keep separate name parameter
-   - Ensure display names still work
+4. **Display Name Handling**:
+   - Keep separate `display_name` parameter (already exists)
+   - For display purposes, use helper method: `MinigameRegistry.get_class_type_string(character.class_type)`
+   - Display names remain separate from class type (allows custom names)
 
 ### Phase 4: Update Registry Registration
 
@@ -185,31 +215,36 @@ func _init(p_class_type: GDScript, ...):
 
 ### Phase 5: Update All Registry Usage
 
-1. **Update Combat System**:
-   - Change `MinigameRegistry.get_behavior(character.class_type)` to use GDScript type
+1. **Update Combat System** (`scripts/scenes/combat.gd`):
+   - Change `MinigameRegistry.get_behavior(character.class_type)` calls to use GDScript type
    - Update all registry lookups
-   - Remove string-based lookups
+   - **Fix string comparison**: Change `if attacker.class_type == "Berserker"` to `if attacker.class_type == BerserkerBehavior`
+   - Remove all string-based lookups and comparisons
 
 2. **Update Behavior Classes**:
-   - Ensure behavior classes have `class_name` declarations
-   - Or use preload references
-   - Update any string-based class type checks
+   - Verify all behavior classes have `class_name` declarations (already confirmed: all have `class_name`)
+   - No changes needed - classes already properly declared
 
 3. **Update Other Systems**:
-   - Search codebase for `character.class_type` usage
-   - Update to use GDScript type
-   - Update any string comparisons
+   - **run_state.gd**: Change `character.class_type.to_lower()` to `MinigameRegistry.get_class_type_string(character.class_type).to_lower()` for land generation
+   - **land_screen.gd**: Use `MinigameRegistry.get_class_type_string(character.class_type)` for display
+   - **party_selection.gd**: Update character creation to use GDScript types (e.g., `BerserkerBehavior` instead of `"Berserker"`)
+   - **scene_manager.gd**: Update if it uses `class_type` parameter
+   - Search codebase for all `character.class_type` usage and update accordingly
 
 ## Related Files
 
 ### Core Files to Modify
-- `scripts/managers/minigame_registry.gd` - Update to use GDScript keys
-- `scripts/data/character.gd` - Change class_type to GDScript
+- `scripts/managers/minigame_registry.gd` - Update to use GDScript keys, add helper methods for serialization
+- `scripts/data/character_battle_entity.gd` - Change class_type to GDScript, update serialize/deserialize
 
 ### Files That Use Registry
-- `scripts/scenes/combat.gd` - Update registry lookups
-- `scripts/class_behaviors/base_class_behavior.gd` - May need updates
-- Any files that create characters - Update to pass GDScript types
+- `scripts/scenes/combat.gd` - Update registry lookups, fix string comparison on line 1065
+- `scripts/data/run_state.gd` - Update to use helper method for string conversion (line 26)
+- `scripts/scenes/party_selection.gd` - Update character creation to use GDScript types
+- `scripts/scenes/land_screen.gd` - Update display to use helper method (line 45)
+- `scripts/managers/scene_manager.gd` - Update if it uses class_type parameter
+- `scripts/class_behaviors/base_class_behavior.gd` - No changes needed
 
 ### Behavior Files (may need class_name)
 - `scripts/class_behaviors/berserker_behavior.gd` - Ensure has class_name
@@ -220,46 +255,87 @@ func _init(p_class_type: GDScript, ...):
 ## Testing Considerations
 
 1. **Type Safety**: Verify GDScript types work as dictionary keys
-2. **Registry Lookups**: Verify all lookups work correctly
+2. **Registry Lookups**: Verify all lookups work correctly with GDScript types
 3. **Character Creation**: Verify characters are created with GDScript types
-4. **Backward Compatibility**: Verify no string-based code remains
+4. **String Comparisons**: Verify all string comparisons are replaced with GDScript type comparisons
 5. **Class Registration**: Verify all classes are registered correctly
+6. **Serialization**: Verify save/load works correctly (GDScript → String → GDScript conversion)
+7. **Helper Methods**: Verify `get_class_type_string()` and `get_class_type_from_string()` work correctly
+8. **Display**: Verify display code uses helper methods correctly
+9. **Edge Cases**: Test null/empty class_type handling in deserialization
 
 ## Migration Notes
 
 ### Breaking Changes
-- `Character.class_type` type changes from `String` to `GDScript`
+- `CharacterBattleEntity.class_type` type changes from `String` to `GDScript`
 - `MinigameRegistry` method signatures change
 - All character creation code must be updated
+- All string comparisons with `class_type` must be updated to use GDScript type comparisons
 
 ### Backward Compatibility
-- Not needed - this is a refactor for type safety
+
+**Save File Compatibility**:
+- Save files contain `class_type` as string in JSON
+- Deserialization must convert string back to GDScript type using helper method
+- Serialization converts GDScript type to string for JSON compatibility
+- **Migration Strategy**: 
+  - Option A: Support both formats during transition (check if string or GDScript)
+  - Option B: Require save file migration (simpler, cleaner)
+  - **Recommendation**: Option B - require migration (alpha stage, breaking changes acceptable)
+
+**Code Compatibility**:
 - All code using `class_type` must be updated
+- String comparisons must be replaced with GDScript type comparisons
+- Display code must use helper methods to get string identifiers
 
 ### Character Creation Pattern
 
 Before:
 ```gdscript
-var character = Character.new("Berserker", attributes, "Berserker Name")
+var character = CharacterBattleEntity.new("Berserker", attributes, "character_id", "Berserker Name")
 ```
 
 After:
 ```gdscript
-var character = Character.new(BerserkerBehavior, attributes, "Berserker Name")
+var character = CharacterBattleEntity.new(BerserkerBehavior, attributes, "character_id", "Berserker Name")
 ```
 
-Or with constants:
+### String Comparison Pattern
+
+Before:
 ```gdscript
-const BERSERKER = preload("res://scripts/class_behaviors/berserker_behavior.gd")
-var character = Character.new(BERSERKER, attributes, "Berserker Name")
+if attacker.class_type == "Berserker":
+    # ...
+```
+
+After:
+```gdscript
+if attacker.class_type == BerserkerBehavior:
+    # ...
+```
+
+### Display/Serialization Pattern
+
+For display or serialization, use helper methods:
+```gdscript
+# Get string identifier for display
+var class_string = MinigameRegistry.get_class_type_string(character.class_type)
+print("%s (%s)" % [character.display_name, class_string])
+
+# Serialization (in CharacterBattleEntity.serialize())
+data["class_type"] = MinigameRegistry.get_class_type_string(class_type)
+
+# Deserialization (in CharacterBattleEntity.deserialize())
+class_type = MinigameRegistry.get_class_type_from_string(data.get("class_type", ""))
 ```
 
 ## Alternative Approaches
 
-### Option A: Use Behavior Class as Type
+### Option A: Use Behavior Class as Type (SELECTED)
 - Character stores behavior class reference
 - Registry uses behavior class as key
 - Simplest approach
+- **This is the recommended approach for this refactor**
 
 ### Option B: Separate Class Type Enum
 - Create enum for class types
@@ -271,7 +347,59 @@ var character = Character.new(BERSERKER, attributes, "Berserker Name")
 - Use constants instead of literals
 - Less type-safe but easier migration
 
+## Implementation Details
+
+### Helper Methods Implementation
+
+The `MinigameRegistry` needs helper methods for serialization/display purposes:
+
+```gdscript
+# In MinigameRegistry
+var class_type_to_string: Dictionary = {}  # GDScript -> String
+var string_to_class_type: Dictionary = {}  # String -> GDScript
+
+func register_class(class_type: GDScript, behavior_class: GDScript, scene_path: String) -> void:
+    # ... existing registration logic ...
+    # Derive string identifier from class name (remove "Behavior" suffix)
+    var class_string = _derive_class_string(class_type)
+    class_type_to_string[class_type] = class_string
+    string_to_class_type[class_string] = class_type
+
+func _derive_class_string(class_type: GDScript) -> String:
+    """Derive string identifier from GDScript class type."""
+    # Example: BerserkerBehavior -> "Berserker"
+    var script_path = class_type.resource_path
+    var file_name = script_path.get_file().get_basename()
+    # Remove "Behavior" suffix if present
+    if file_name.ends_with("_behavior"):
+        return file_name.substr(0, file_name.length() - 9).capitalize()
+    elif file_name.ends_with("Behavior"):
+        return file_name.substr(0, file_name.length() - 8)
+    return file_name.capitalize()
+
+func get_class_type_string(class_type: GDScript) -> String:
+    """Get string identifier for a GDScript class type."""
+    if class_type == null:
+        return ""
+    return class_type_to_string.get(class_type, "")
+
+func get_class_type_from_string(class_string: String) -> GDScript:
+    """Get GDScript type from string identifier."""
+    if class_string.is_empty():
+        return null
+    return string_to_class_type.get(class_string, null)
+```
+
+### Specific Issues Addressed
+
+1. **Class Name Mismatch**: Updated all references from `Character` to `CharacterBattleEntity` throughout the document
+2. **String Comparison**: Documented the need to fix `if attacker.class_type == "Berserker"` in `combat.gd:1065`
+3. **Serialization**: Added comprehensive serialization/deserialization strategy with helper methods
+4. **Type Choice**: Clarified that behavior class directly should be used as the key type
+5. **Additional String Usage**: Documented `run_state.gd` and `land_screen.gd` usage that needs updating
+6. **Display Names**: Clarified that display names remain separate, helper methods used for string conversion
+
 ## Status
 
-Pending
+Completed
 

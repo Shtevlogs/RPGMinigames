@@ -23,7 +23,8 @@ func generate_land_sequence() -> void:
     var unique_classes: Array[String] = []
     var class_set: Dictionary = {}
     for character in party:
-        var class_type: String = character.class_type.to_lower()
+        var class_string = MinigameRegistry.get_class_type_string(character.class_type)
+        var class_type: String = class_string.to_lower()
         if not class_set.has(class_type):
             unique_classes.append(class_type)
             class_set[class_type] = true

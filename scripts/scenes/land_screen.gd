@@ -42,7 +42,8 @@ func _update_party_display(party: Array[CharacterBattleEntity]) -> void:
     for character in party:
         var char_label: Label = Label.new()
         var health_info: String = "HP: %d/%d" % [character.health.current, character.health.max_hp]
-        char_label.text = "%s (%s) - %s" % [character.display_name, character.class_type, health_info]
+        var class_string = MinigameRegistry.get_class_type_string(character.class_type)
+        char_label.text = "%s (%s) - %s" % [character.display_name, class_string, health_info]
         char_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
         party_info_container.add_child(char_label)
 

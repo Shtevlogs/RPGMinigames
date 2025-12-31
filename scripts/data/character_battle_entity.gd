@@ -1,13 +1,15 @@
 class_name CharacterBattleEntity
 extends BattleEntity
 
-var class_type: String  # Berserker, TimeWizard, Monk, WildMage, etc.
+var class_type: GDScript  # BerserkerBehavior, TimeWizardBehavior, MonkBehavior, WildMageBehavior, etc.
 var equipment: EquipmentSlots
 var class_state: Dictionary = {}  # Class-specific state (effect ranges, berserk stacks, etc.)
 
-func _init(p_class_type: String = "", p_attributes: Attributes = null, p_entity_id: String = "", p_display_name: String = ""):
+func _init(p_class_type: GDScript = null, p_attributes: Attributes = null, p_entity_id: String = "", p_display_name: String = ""):
     # Call super._init() to initialize base class properties
-    super._init(p_entity_id if p_entity_id != "" else p_class_type, p_display_name if p_display_name != "" else p_class_type, p_attributes)
+    # Convert GDScript type to string for entity_id and display_name fallbacks
+    var class_string = MinigameRegistry.get_class_type_string(p_class_type) if p_class_type != null else ""
+    super._init(p_entity_id if p_entity_id != "" else class_string, p_display_name if p_display_name != "" else class_string, p_attributes)
     class_type = p_class_type
     equipment = EquipmentSlots.new()
     class_state = {}
@@ -52,7 +54,7 @@ func duplicate() -> CharacterBattleEntity:
 func serialize() -> Dictionary:
     """Serialize character to dictionary."""
     var data: Dictionary = super.serialize()
-    data["class_type"] = class_type
+    data["class_type"] = MinigameRegistry.get_class_type_string(class_type)
     data["equipment"] = equipment.serialize() if equipment != null else {}
     data["class_state"] = class_state.duplicate()
     return data
@@ -60,7 +62,7 @@ func serialize() -> Dictionary:
 func deserialize(data: Dictionary) -> void:
     """Deserialize character from dictionary."""
     super.deserialize(data)
-    class_type = data.get("class_type", "")
+    class_type = MinigameRegistry.get_class_type_from_string(data.get("class_type", ""))
     
     # Deserialize equipment
     var equipment_data: Dictionary = data.get("equipment", {})

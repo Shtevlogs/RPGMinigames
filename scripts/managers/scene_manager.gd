@@ -56,7 +56,7 @@ func change_scene(scene_path: String, transition_data: Dictionary = {}) -> void:
     scene_changed.emit(scene_path)
     transition_in_progress = false
 
-func load_minigame_scene(class_type: String) -> String:
+func load_minigame_scene(class_type: GDScript) -> String:
     # Use MinigameRegistry instead of match statement
     return MinigameRegistry.get_minigame_scene_path(class_type)
 
@@ -72,7 +72,7 @@ func go_to_combat() -> void:
 func go_to_land_screen() -> void:
     change_scene(LAND_SCREEN)
 
-func go_to_minigame(class_type: String, minigame_data: Dictionary = {}) -> void:
+func go_to_minigame(class_type: GDScript, minigame_data: Dictionary = {}) -> void:
     var scene_path = load_minigame_scene(class_type)
     if scene_path != "":
         change_scene(scene_path, minigame_data)

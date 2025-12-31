@@ -8,7 +8,7 @@ extends Control
 var available_characters: Array[CharacterBattleEntity] = []
 var selected_party: Array[CharacterBattleEntity] = []
 
-const CLASS_TYPES = ["Berserker", "TimeWizard", "Monk", "WildMage"]
+var CLASS_TYPES: Array[GDScript] = [BerserkerBehavior, TimeWizardBehavior, MonkBehavior, WildMageBehavior]
 
 func _ready() -> void:
     confirm_button.pressed.connect(_on_confirm_pressed)
@@ -26,12 +26,14 @@ func generate_class_selection() -> void:
     
     # Generate random selection of individual characters (placeholder - should be rerollable)
     for i in range(6):  # Show 6 options
-        var class_type: String = CLASS_TYPES[randi() % CLASS_TYPES.size()]
-        class_counts[class_type] += 1
-        var character_name: String = "%s %d" % [class_type, class_counts[class_type]]
+        var class_type: GDScript = CLASS_TYPES[randi() % CLASS_TYPES.size()]
+        var class_string = MinigameRegistry.get_class_type_string(class_type)
+        if not class_counts.has(class_string):
+            class_counts[class_string] = 0
+        class_counts[class_string] += 1
+        var character_name: String = "%s %d" % [class_string, class_counts[class_string]]
         # Create character with class_type and name, attributes will default
         var character: CharacterBattleEntity = CharacterBattleEntity.new(class_type, null, character_name, character_name)
-        character.class_type = class_type
         available_characters.append(character)
     
     update_ui()

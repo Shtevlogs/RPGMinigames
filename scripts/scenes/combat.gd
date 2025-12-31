@@ -768,7 +768,7 @@ func start_ability_target_selection(character: CharacterBattleEntity) -> void:
     item_button.disabled = true
     ability_button.disabled = true
 
-func _needs_target_selection(class_type: String) -> bool:
+func _needs_target_selection(class_type: GDScript) -> bool:
     """Check if a class type requires target selection before minigame."""
     var behavior = MinigameRegistry.get_behavior(class_type)
     if behavior == null:
@@ -791,7 +791,8 @@ func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity)
     # Get minigame scene path from registry
     var minigame_path: String = MinigameRegistry.get_minigame_scene_path(character.class_type)
     if minigame_path == "":
-        push_error("Failed to get minigame scene path for class: " + character.class_type)
+        var class_string = MinigameRegistry.get_class_type_string(character.class_type)
+        push_error("Failed to get minigame scene path for class: " + class_string)
         unblock_input()
         return
     
@@ -801,7 +802,8 @@ func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity)
     if behavior != null:
         context = behavior.build_minigame_context(character, target)
     else:
-        push_error("Failed to get behavior for class: " + character.class_type)
+        var class_string = MinigameRegistry.get_class_type_string(character.class_type)
+        push_error("Failed to get behavior for class: " + class_string)
         unblock_input()
         return
     
@@ -1062,7 +1064,7 @@ func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleE
     
     # Check if berserk state will be cleared (for logging)
     var was_berserking: bool = false
-    if attacker.class_type == "Berserker":
+    if attacker.class_type == BerserkerBehavior:
         was_berserking = attacker.class_state.get("is_berserking", false)
     
     # Calculate damage from Power attribute

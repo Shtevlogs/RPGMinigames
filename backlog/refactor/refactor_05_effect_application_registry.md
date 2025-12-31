@@ -266,5 +266,18 @@ After this refactor, adding new effects is simple:
 
 ## Status
 
-Pending (Depends on refactor_04)
+❌ **Won't Do - Achieved by Other Means**
+
+This refactor is no longer needed because:
+
+1. **Minigame Result Application**: The match statement in `_apply_effect()` for minigame results was already removed in refactor_04. Effects are now applied directly from `result.effects: Array[StatusEffect]` without any type checking or match statements.
+
+2. **Deserialization Match Statement**: The remaining match statement in `battle_entity.gd._deserialize_status_effects()` is acceptable for save/load functionality. It's a localized use case that doesn't violate the Open/Closed Principle in a problematic way, as deserialization is inherently a special case that needs to handle all effect types.
+
+3. **Future Item/Equipment Effects**: If items or equipment need to create effects from dictionaries in the future, they can either:
+   - Create effect instances directly (preferred, following the pattern from refactor_04)
+   - Use the deserialization logic if needed
+   - Implement a registry only if the use case becomes more complex
+
+The registry pattern would add unnecessary complexity for the current needs of the codebase.
 
