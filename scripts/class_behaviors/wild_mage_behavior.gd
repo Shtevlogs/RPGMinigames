@@ -2,6 +2,7 @@ class_name WildMageBehavior
 extends BaseClassBehavior
 
 const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
+const WILD_MAGE_MINIGAME_RESULT_DATA = preload("res://scripts/data/wild_mage_minigame_result_data.gd")
 
 func needs_target_selection() -> bool:
     return false  # WildMage doesn't need target selection
@@ -38,23 +39,18 @@ func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattle
 
 func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Wild Mage minigame results for logging."""
-    # Use minigame's format_result() method if available
-    # Otherwise, fall back to basic formatting
     var log_entries: Array[String] = []
     
-    if result == null or result.metadata.is_empty():
+    if result == null:
         return log_entries
     
-    # Try to use minigame's format_result method
-    # This requires getting the minigame instance, which may not be available
-    # For now, use basic formatting that matches the minigame's format_result
-    
-    var result_hand_type: String = result.metadata.get("hand_type", "high_card")
-    var result_multiplier: float = result.metadata.get("multiplier", 1.0)
+    var data = result.result_data as WildMageMinigameResultData
+    if data == null:
+        return log_entries
     
     # Format hand type name
     var hand_type_name: String = ""
-    match result_hand_type:
+    match data.hand_type:
         "straight_flush":
             hand_type_name = "Straight Flush"
         "straight":
@@ -69,7 +65,7 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
             hand_type_name = "High Card"
     
     # Log the hand result
-    log_entries.append("%s forms a %s! (%.1fx damage)" % [character.display_name, hand_type_name, result_multiplier])
+    log_entries.append("%s forms a %s! (%.1fx damage)" % [character.display_name, hand_type_name, data.multiplier])
     
     return log_entries
 

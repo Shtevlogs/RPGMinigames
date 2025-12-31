@@ -272,5 +272,19 @@ result.add_status_effect(effect)
 
 ## Status
 
-Pending (Depends on refactor_02)
+✅ **Completed**
+
+All requirements have been implemented:
+- ✅ Changed `MinigameResult.effects` from `Array[Dictionary]` to `Array[StatusEffect]`
+- ✅ Removed `add_effect()` method, added `add_status_effect(effect: StatusEffect)` method
+- ✅ Updated all minigame subclasses to create StatusEffect instances directly
+- ✅ Removed `_apply_effect()` match statement from combat system
+- ✅ Updated `_apply_minigame_result()` to apply effects directly without type checking
+- ✅ Updated `duplicate()` method to properly duplicate StatusEffect array
+- ✅ Replaced `MinigameResult.metadata: Dictionary` with typed `MinigameResultData` classes
+- ✅ Created base `MinigameResultData` class and four subclasses (Berserker, Monk, Time Wizard, Wild Mage)
+- ✅ Updated all minigames to create and set typed result_data instances
+- ✅ Updated all format methods and behavior classes to use typed properties
+- ✅ Removed duplicate `format_result` methods from minigames (formatting handled by behavior classes)
+- ✅ Type safety maintained throughout the data flow from minigames to combat system
 

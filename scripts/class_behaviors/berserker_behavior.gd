@@ -3,6 +3,7 @@ extends BaseClassBehavior
 
 const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
 const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
+const BERSERKER_MINIGAME_RESULT_DATA = preload("res://scripts/data/berserker_minigame_result_data.gd")
 
 func needs_target_selection() -> bool:
     return false  # Berserker doesn't need target selection
@@ -66,30 +67,27 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
     """Format Berserker minigame results for logging."""
     var log_entries: Array[String] = []
     
-    if result == null or result.metadata.is_empty():
+    if result == null:
         return log_entries
     
-    var hand_value: int = result.metadata.get("hand_value", 0)
-    var busted: bool = result.metadata.get("busted", false)
-    var blackjack: bool = result.metadata.get("blackjack", false)
-    var cards_drawn: int = result.metadata.get("cards_drawn", 0)
+    var data = result.result_data as BerserkerMinigameResultData
+    if data == null:
+        return log_entries
     
     # Log the hand result
-    if blackjack:
-        log_entries.append("%s scores BLACKJACK! (21 with %d cards)" % [character.display_name, cards_drawn])
-    elif busted:
-        log_entries.append("%s busts with %d! (drew %d cards)" % [character.display_name, hand_value, cards_drawn])
+    if data.blackjack:
+        log_entries.append("%s scores BLACKJACK! (21 with %d cards)" % [character.display_name, data.cards_drawn])
+    elif data.busted:
+        log_entries.append("%s busts with %d! (drew %d cards)" % [character.display_name, data.hand_value, data.cards_drawn])
     else:
-        log_entries.append("%s stands with %d (drew %d cards)" % [character.display_name, hand_value, cards_drawn])
+        log_entries.append("%s stands with %d (drew %d cards)" % [character.display_name, data.hand_value, data.cards_drawn])
     
     # Log berserk state if applicable
-    var is_berserking: bool = result.metadata.get("is_berserking", false)
-    var berserk_stacks: int = result.metadata.get("berserk_stacks", 0)
-    if is_berserking and berserk_stacks > 0:
-        if berserk_stacks == 1:
+    if data.is_berserking and data.berserk_stacks > 0:
+        if data.berserk_stacks == 1:
             log_entries.append("%s enters Berserk state! (+1 Power, +1 Speed)" % character.display_name)
         else:
-            log_entries.append("%s's Berserk state intensifies! (%d stacks: +%d Power, +%d Speed)" % [character.display_name, berserk_stacks, berserk_stacks, berserk_stacks])
+            log_entries.append("%s's Berserk state intensifies! (%d stacks: +%d Power, +%d Speed)" % [character.display_name, data.berserk_stacks, data.berserk_stacks, data.berserk_stacks])
     
     return log_entries
 

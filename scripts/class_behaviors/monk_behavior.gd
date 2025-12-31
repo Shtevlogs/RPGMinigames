@@ -3,6 +3,7 @@ extends BaseClassBehavior
 
 const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
 const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
+const MONK_MINIGAME_RESULT_DATA = preload("res://scripts/data/monk_minigame_result_data.gd")
 
 func needs_target_selection() -> bool:
     return true  # Monk needs target selection
@@ -53,16 +54,54 @@ func apply_attack_effects(_attacker: CharacterBattleEntity, target: EnemyBattleE
     target.add_status_effect(strategy_debuff)
     return base_damage
 
-func format_minigame_result(_character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
+func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
     """Format Monk minigame results for logging."""
-    # The minigame's format_result() method handles formatting
-    # This method can add behavior-specific formatting if needed
-    if result == null:
-        return []
+    var log_entries: Array[String] = []
     
-    # Call minigame's format_result if available
-    # For now, return empty (minigame handles its own formatting)
-    return []
+    if result == null:
+        return log_entries
+    
+    var data = result.result_data as MonkMinigameResultData
+    if data == null:
+        return log_entries
+    
+    var player_move_name: String = ""
+    match data.player_move:
+        "strike":
+            player_move_name = "Strike"
+        "grapple":
+            player_move_name = "Grapple"
+        "counter":
+            player_move_name = "Counter"
+        _:
+            player_move_name = "Unknown"
+    
+    var enemy_card_name: String = ""
+    match data.selected_enemy_card:
+        "rock":
+            enemy_card_name = "Rock"
+        "paper":
+            enemy_card_name = "Paper"
+        "scissors":
+            enemy_card_name = "Scissors"
+        _:
+            enemy_card_name = "Unknown"
+    
+    var outcome_text: String = ""
+    match data.outcome:
+        "win":
+            outcome_text = "wins"
+        "loss":
+            outcome_text = "loses"
+        "tie":
+            outcome_text = "ties"
+        _:
+            outcome_text = "unknown"
+    
+    log_entries.append("%s uses %s against enemy's %s and %s!" % 
+                      [character.display_name, player_move_name, enemy_card_name, outcome_text])
+    
+    return log_entries
 
 func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     """Monk needs a target, so return null (target should be provided)."""

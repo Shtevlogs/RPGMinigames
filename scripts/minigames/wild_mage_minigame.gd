@@ -2,6 +2,7 @@ class_name WildMageMinigame
 extends BaseMinigame
 
 const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
+const WILD_MAGE_MINIGAME_RESULT_DATA = preload("res://scripts/data/wild_mage_minigame_result_data.gd")
 
 # Wild Mage minigame - Poker-like card game implementation
 # Core poker mechanics with hand evaluation and discard system
@@ -476,13 +477,15 @@ func _on_play_button_pressed() -> void:
     # Create result
     var result: MinigameResult = MinigameResult.new(true, _get_performance_score())
     result.damage = damage
-    result.metadata = {
-        "hand_type": current_hand_type,
-        "hand_cards": _get_selected_cards_data(),
-        "multiplier": current_multiplier,
-        "cards_played": selected.size(),
-        "equipment_modifiers": {}  # Placeholder for future equipment effects
-    }
+    
+    # Create result data
+    var result_data = WILD_MAGE_MINIGAME_RESULT_DATA.new()
+    result_data.hand_type = current_hand_type
+    result_data.hand_cards = _get_selected_cards_data()
+    result_data.multiplier = current_multiplier
+    result_data.cards_played = selected.size()
+    result_data.equipment_modifiers = {}  # Placeholder for future equipment effects
+    result.result_data = result_data
     
     # Complete minigame
     complete_minigame(result)
@@ -522,37 +525,6 @@ static func build_context(_character: CharacterBattleEntity, _target: BattleEnti
     # This is handled by WildMageBehavior.build_minigame_context()
     # This method exists for consistency with other minigames
     return {}
-
-func format_result(result: MinigameResult) -> Array[String]:
-    """Format Wild Mage minigame results for logging."""
-    var log_entries: Array[String] = []
-    
-    if result == null or result.metadata.is_empty():
-        return log_entries
-    
-    var result_hand_type: String = result.metadata.get("hand_type", "high_card")
-    var result_multiplier: float = result.metadata.get("multiplier", 1.0)
-    
-    # Format hand type name
-    var hand_type_name: String = ""
-    match result_hand_type:
-        "straight_flush":
-            hand_type_name = "Straight Flush"
-        "straight":
-            hand_type_name = "Straight"
-        "flush":
-            hand_type_name = "Flush"
-        "two_pair":
-            hand_type_name = "Two Pair"
-        "pair":
-            hand_type_name = "Pair"
-        "high_card":
-            hand_type_name = "High Card"
-    
-    # Log the hand result
-    log_entries.append("%s forms a %s! (%.1fx damage)" % [character.display_name, hand_type_name, result_multiplier])
-    
-    return log_entries
 
 func _ready() -> void:
     # Set up UI references

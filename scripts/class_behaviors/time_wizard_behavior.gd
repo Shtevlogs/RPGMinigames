@@ -2,6 +2,7 @@ class_name TimeWizardBehavior
 extends BaseClassBehavior
 
 const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
+const TIME_WIZARD_MINIGAME_RESULT_DATA = preload("res://scripts/data/time_wizard_minigame_result_data.gd")
 
 func needs_target_selection() -> bool:
     return true  # TimeWizard needs target selection
@@ -44,27 +45,25 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
     """Format Time Wizard minigame results for logging."""
     var log_entries: Array[String] = []
     
-    if result == null or result.metadata.is_empty():
+    if result == null:
         return log_entries
     
-    var completion: float = result.metadata.get("completion_percentage", 0.0)
-    var event_activated: bool = result.metadata.get("event_activated", false)
-    var mega_burst: bool = result.metadata.get("mega_time_burst", false)
-    var time_expired: bool = result.metadata.get("time_expired", false)
+    var data = result.result_data as TimeWizardMinigameResultData
+    if data == null:
+        return log_entries
     
-    if mega_burst:
+    if data.mega_time_burst:
         log_entries.append("%s completes the board and triggers MEGA TIME BURST! (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
-    elif event_activated:
-        var symbol_text: String = result.metadata.get("event_symbol_text", "?")
+                          [character.display_name, data.completion_percentage * 100.0])
+    elif data.event_activated:
         log_entries.append("%s activates timeline event %s! (%.1f%% completion)" % 
-                          [character.display_name, symbol_text, completion * 100.0])
-    elif time_expired:
+                          [character.display_name, data.event_symbol_text, data.completion_percentage * 100.0])
+    elif data.time_expired:
         log_entries.append("%s's time expires - TIME BURST! (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
+                          [character.display_name, data.completion_percentage * 100.0])
     else:
         log_entries.append("%s completes the minigame (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
+                          [character.display_name, data.completion_percentage * 100.0])
     
     return log_entries
 

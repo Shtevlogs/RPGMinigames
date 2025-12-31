@@ -30,9 +30,3 @@ func complete_minigame(result: MinigameResult) -> void:
 static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
     push_error("build_context() must be implemented in subclass")
     return {}
-
-# Format minigame result for logging
-# Override in subclasses to provide class-specific formatting
-func format_result(_result: MinigameResult) -> Array[String]:
-    # Default: no special formatting
-    return []

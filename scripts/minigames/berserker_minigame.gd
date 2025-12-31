@@ -2,6 +2,8 @@ class_name BerserkerMinigame
 extends BaseMinigame
 
 const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
+const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
+const BERSERKER_MINIGAME_RESULT_DATA = preload("res://scripts/data/berserker_minigame_result_data.gd")
 
 # Berserker minigame - Blackjack implementation
 # First pass: Core blackjack mechanics with stubbed advanced features
@@ -258,24 +260,20 @@ func _on_stand_button_pressed() -> void:
     
     # Add berserk effect if berserking
     if is_berserking and berserk_stacks > 0:
-        result.effects.append({
-            "type": "berserk",
-            "class": "BerserkEffect",
-            "target": character,  # Self-target
-            "magnitude": 1.0,
-            "duration": 999,
-            "berserk_stacks": berserk_stacks
-        })
+        var effect = BERSERK_EFFECT.new(berserk_stacks)
+        effect.target = character  # Self-target
+        result.add_status_effect(effect)
     
-    result.metadata = {
-        "hand_value": hand_value,
-        "cards_drawn": hand.size(),
-        "busted": is_busted,
-        "blackjack": is_blackjack,
-        "is_berserking": is_berserking,
-        "berserk_stacks": berserk_stacks,
-        "effect_ranges": effect_ranges
-    }
+    # Create result data
+    var result_data = BERSERKER_MINIGAME_RESULT_DATA.new()
+    result_data.hand_value = hand_value
+    result_data.cards_drawn = hand.size()
+    result_data.busted = is_busted
+    result_data.blackjack = is_blackjack
+    result_data.is_berserking = is_berserking
+    result_data.berserk_stacks = berserk_stacks
+    result_data.effect_ranges = effect_ranges
+    result.result_data = result_data
     
     # Complete minigame
     complete_minigame(result)
@@ -325,37 +323,6 @@ static func build_context(_character: CharacterBattleEntity, _target: BattleEnti
         "berserk_stacks": class_state.get("berserk_stacks", 0),
         "is_berserking": class_state.get("is_berserking", false)
     }
-
-func format_result(result: MinigameResult) -> Array[String]:
-    """Format Berserker minigame results for logging."""
-    var log_entries: Array[String] = []
-    
-    if result == null or result.metadata.is_empty():
-        return log_entries
-    
-    var result_hand_value: int = result.metadata.get("hand_value", 0)
-    var busted: bool = result.metadata.get("busted", false)
-    var blackjack: bool = result.metadata.get("blackjack", false)
-    var cards_drawn: int = result.metadata.get("cards_drawn", 0)
-    
-    # Log the hand result
-    if blackjack:
-        log_entries.append("%s scores BLACKJACK! (21 with %d cards)" % [character.display_name, cards_drawn])
-    elif busted:
-        log_entries.append("%s busts with %d! (drew %d cards)" % [character.display_name, result_hand_value, cards_drawn])
-    else:
-        log_entries.append("%s stands with %d (drew %d cards)" % [character.display_name, result_hand_value, cards_drawn])
-    
-    # Log berserk state if applicable
-    var result_is_berserking: bool = result.metadata.get("is_berserking", false)
-    var result_berserk_stacks: int = result.metadata.get("berserk_stacks", 0)
-    if result_is_berserking and result_berserk_stacks > 0:
-        if result_berserk_stacks == 1:
-            log_entries.append("%s enters Berserk state! (+1 Power, +1 Speed)" % character.display_name)
-        else:
-            log_entries.append("%s's Berserk state intensifies! (%d stacks: +%d Power, +%d Speed)" % [character.display_name, result_berserk_stacks, result_berserk_stacks, result_berserk_stacks])
-    
-    return log_entries
 
 func _ready() -> void:
     # Set up UI references

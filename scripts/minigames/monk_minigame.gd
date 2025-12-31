@@ -2,6 +2,7 @@ class_name MonkMinigame
 extends BaseMinigame
 
 const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
+const MONK_MINIGAME_RESULT_DATA = preload("res://scripts/data/monk_minigame_result_data.gd")
 
 # Monk minigame - Rock Paper Scissors implementation
 # Core RPS mechanics with enemy cards, win/loss/tie effects, and redo system
@@ -357,34 +358,38 @@ func _complete_minigame() -> void:
     var damage: int = _calculate_damage()
     
     # Build effects array from card outcome
-    var effects: Array[Dictionary] = []
     # EQUIPMENT HOOK: Apply win/loss/tie effects from selected enemy card
     if selected_enemy_card != null:
         match outcome:
             "win":
                 # Apply win effect from card
+                # TODO: Create StatusEffect instances (e.g., SilenceEffect, TauntEffect, AlterAttributeEffect)
                 pass  # Stubbed
             "loss":
                 # Apply loss effect from card
+                # TODO: Create StatusEffect instances
                 pass  # Stubbed
             "tie":
                 # Apply tie effect from card
+                # TODO: Create StatusEffect instances
                 pass  # Stubbed
     
     # Create result
     var result: MinigameResult = MinigameResult.new(true, _get_performance_score())
     result.damage = damage
-    result.effects = effects
-    result.metadata = {
-        "enemy_cards": _get_enemy_cards_data(),
-        "player_move": player_move,
-        "selected_enemy_card": selected_enemy_card.rps_type if selected_enemy_card != null else "",
-        "outcome": outcome,
-        "redos_used": redos_used,
-        "won": (outcome == "win"),
-        "lost": (outcome == "loss"),
-        "tied": (outcome == "tie")
-    }
+    # Effects array is initialized as empty Array[StatusEffect] in MinigameResult
+    
+    # Create result data
+    var result_data = MonkMinigameResultData.new()
+    result_data.enemy_cards = _get_enemy_cards_data()
+    result_data.player_move = player_move
+    result_data.selected_enemy_card = selected_enemy_card.rps_type if selected_enemy_card != null else ""
+    result_data.outcome = outcome
+    result_data.redos_used = redos_used
+    result_data.won = (outcome == "win")
+    result_data.lost = (outcome == "loss")
+    result_data.tied = (outcome == "tie")
+    result.result_data = result_data
     
     # Complete minigame
     complete_minigame(result)
@@ -441,53 +446,6 @@ static func build_context(_character: CharacterBattleEntity, _target: BattleEnti
     # This is handled by MonkBehavior.build_minigame_context()
     # This method exists for consistency with other minigames
     return {}
-
-func format_result(result: MinigameResult) -> Array[String]:
-    """Format Monk minigame results for logging."""
-    var log_entries: Array[String] = []
-    
-    if result == null or result.metadata.is_empty():
-        return log_entries
-    
-    var player_move_name: String = ""
-    match result.metadata.get("player_move", ""):
-        MOVE_STRIKE:
-            player_move_name = "Strike"
-        MOVE_GRAPPLE:
-            player_move_name = "Grapple"
-        MOVE_COUNTER:
-            player_move_name = "Counter"
-        _:
-            player_move_name = "Unknown"
-    
-    var enemy_card_type: String = result.metadata.get("selected_enemy_card", "")
-    var enemy_card_name: String = ""
-    match enemy_card_type:
-        CARD_ROCK:
-            enemy_card_name = "Rock"
-        CARD_PAPER:
-            enemy_card_name = "Paper"
-        CARD_SCISSORS:
-            enemy_card_name = "Scissors"
-        _:
-            enemy_card_name = "Unknown"
-    
-    var result_outcome: String = result.metadata.get("outcome", "")
-    var outcome_text: String = ""
-    match result_outcome:
-        "win":
-            outcome_text = "wins"
-        "loss":
-            outcome_text = "loses"
-        "tie":
-            outcome_text = "ties"
-        _:
-            outcome_text = "unknown"
-    
-    log_entries.append("%s uses %s against enemy's %s and %s!" % 
-                      [character.display_name, player_move_name, enemy_card_name, outcome_text])
-    
-    return log_entries
 
 func _ready() -> void:
     # Set up UI references

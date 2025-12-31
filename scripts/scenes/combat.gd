@@ -919,8 +919,19 @@ func _apply_minigame_result(character: CharacterBattleEntity, result: MinigameRe
                     _handle_enemy_death(target as EnemyBattleEntity)
     
     # Apply effects
-    for effect_dict in result.effects:
-        _apply_effect(effect_dict, character)
+    for effect in result.effects:
+        if effect.target != null:
+            effect.target.add_status_effect(effect)
+            if combat_log != null:
+                combat_log.add_entry("%s applies %s to %s!" % [character.display_name, effect.get_effect_name(), effect.target.display_name], combat_log.EventType.STATUS_EFFECT)
+            
+            # Update UI based on target type
+            if effect.target.is_party_member():
+                _update_party_displays()
+            else:
+                _update_enemy_displays()
+        else:
+            push_warning("Effect has no target: %s" % effect.get_effect_name())
     
     # Update UI
     _update_party_displays()
@@ -971,57 +982,6 @@ func _process_combatant_status_effects(combatant: BattleEntity) -> void:
             if not combatant.is_alive():
                 _handle_enemy_death(combatant as EnemyBattleEntity)
 
-func _apply_effect(effect_dict: Dictionary, source: CharacterBattleEntity) -> void:
-    """Apply a single effect from minigame result."""
-    var effect_type: String = effect_dict.get("type", "")
-    var effect_class_name: String = effect_dict.get("class", "")
-    var target: BattleEntity = effect_dict.get("target", null)
-    var magnitude: float = effect_dict.get("magnitude", 1.0)
-    var duration: int = effect_dict.get("duration", 1)
-    var stacks: int = effect_dict.get("stacks", 1)
-    
-    # Determine target if not provided
-    if target == null:
-        target = _get_ability_target(source, null)
-    
-    if target == null:
-        push_warning("No target for effect application")
-        return
-    
-    # Create effect instance based on type/class name
-    var effect: StatusEffect = null
-    var effect_identifier: String = effect_class_name if effect_class_name != "" else effect_type
-    
-    match effect_identifier.to_lower():
-        "burneffect", "burn":
-            effect = BURN_EFFECT.new(duration, stacks, magnitude)
-        "silenceeffect", "silence":
-            effect = SILENCE_EFFECT.new(duration)
-        "taunteffect", "taunt":
-            effect = TAUNT_EFFECT.new(duration)
-        "alterattributeeffect", "alterattribute", "alter_attribute":
-            var attribute_name: String = effect_dict.get("attribute_name", "")
-            var alteration_amount: int = effect_dict.get("alteration_amount", 0)
-            effect = ALTER_ATTRIBUTE_EFFECT.new(attribute_name, alteration_amount, duration)
-        "berserkeffect", "berserk":
-            var berserk_stacks: int = effect_dict.get("berserk_stacks", 1)
-            effect = BERSERK_EFFECT.new(berserk_stacks)
-        _:
-            push_warning("Unknown effect type: %s or class: %s" % [effect_type, effect_class_name])
-            if combat_log != null:
-                combat_log.add_entry("Unknown effect type: %s" % effect_type, combat_log.EventType.ABILITY)
-            return
-    
-    # Apply effect to target
-    target.add_status_effect(effect)
-    if combat_log != null:
-        combat_log.add_entry("%s applies %s to %s!" % [source.display_name, effect.get_effect_name(), target.display_name], combat_log.EventType.STATUS_EFFECT)
-    
-    # Update UI based on target type
-    if target.is_party_member():
-        _update_party_displays()
-    else:
-        _update_enemy_displays()
 
 func close_minigame_modal() -> void:
     """Close the current minigame modal."""

@@ -2,6 +2,7 @@ class_name TimeWizardMinigame
 extends BaseMinigame
 
 const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
+const TIME_WIZARD_MINIGAME_RESULT_DATA = preload("res://scripts/data/time_wizard_minigame_result_data.gd")
 
 # Time Wizard minigame - Minesweeper analogue with time-based mechanics
 # Core minesweeper mechanics with timeline events, time limit, and completion-based damage
@@ -445,27 +446,27 @@ func _complete_minigame() -> void:
     # Calculate damage
     var damage: int = _calculate_damage(completion, is_event_activated, is_mega_burst)
     
-    # Build metadata
-    var metadata: Dictionary = {
-        "completion_percentage": completion,
-        "event_activated": is_event_activated,
-        "mega_time_burst": is_mega_burst,
-        "time_expired": (time_remaining <= 0.0),
-        "revealed_count": revealed_count,
-        "total_squares": total_squares
-    }
-    
-    if is_event_activated:
-        var event_square: Square = grid[selected_event.y][selected_event.x]
-        metadata["event_symbol"] = event_square.event_symbol
-        metadata["event_symbol_text"] = _get_event_symbol_text(event_square.event_symbol)
-        # EQUIPMENT HOOK: Event position-based targeting (left = first enemy, etc.)
-        metadata["event_position"] = {"x": selected_event.x, "y": selected_event.y}
-    
     # Create result
     var result: MinigameResult = MinigameResult.new(true, completion)
     result.damage = damage
-    result.metadata = metadata
+    
+    # Create result data
+    var result_data = TIME_WIZARD_MINIGAME_RESULT_DATA.new()
+    result_data.completion_percentage = completion
+    result_data.event_activated = is_event_activated
+    result_data.mega_time_burst = is_mega_burst
+    result_data.time_expired = (time_remaining <= 0.0)
+    result_data.revealed_count = revealed_count
+    result_data.total_squares = total_squares
+    
+    if is_event_activated:
+        var event_square: Square = grid[selected_event.y][selected_event.x]
+        result_data.event_symbol = event_square.event_symbol
+        result_data.event_symbol_text = _get_event_symbol_text(event_square.event_symbol)
+        # EQUIPMENT HOOK: Event position-based targeting (left = first enemy, etc.)
+        result_data.event_position = {"x": selected_event.x, "y": selected_event.y}
+    
+    result.result_data = result_data
     
     # EQUIPMENT HOOK: Apply event-specific effects based on symbol
     # TODO: Apply effects based on event symbol type
@@ -504,34 +505,6 @@ static func build_context(_character: CharacterBattleEntity, _target: BattleEnti
     # This is handled by TimeWizardBehavior.build_minigame_context()
     # This method exists for consistency with other minigames
     return {}
-
-func format_result(result: MinigameResult) -> Array[String]:
-    """Format Time Wizard minigame results for logging."""
-    var log_entries: Array[String] = []
-    
-    if result == null or result.metadata.is_empty():
-        return log_entries
-    
-    var completion: float = result.metadata.get("completion_percentage", 0.0)
-    var event_activated: bool = result.metadata.get("event_activated", false)
-    var mega_burst: bool = result.metadata.get("mega_time_burst", false)
-    var time_expired: bool = result.metadata.get("time_expired", false)
-    
-    if mega_burst:
-        log_entries.append("%s completes the board and triggers MEGA TIME BURST! (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
-    elif event_activated:
-        var symbol_text: String = result.metadata.get("event_symbol_text", "?")
-        log_entries.append("%s activates timeline event %s! (%.1f%% completion)" % 
-                          [character.display_name, symbol_text, completion * 100.0])
-    elif time_expired:
-        log_entries.append("%s's time expires - TIME BURST! (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
-    else:
-        log_entries.append("%s completes the minigame (%.1f%% completion)" % 
-                          [character.display_name, completion * 100.0])
-    
-    return log_entries
 
 func _ready() -> void:
     # Set up UI references
