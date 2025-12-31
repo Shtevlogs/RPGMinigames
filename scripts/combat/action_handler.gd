@@ -15,44 +15,7 @@ func _init(p_battle_state: BattleState, p_combat_log: CombatLog, p_combat_ui: Co
     combat_log = p_combat_log
     combat_ui = p_combat_ui
 
-func execute_attack(attacker: BattleEntity, target: BattleEntity) -> void:
-    """Execute an attack action. Handles damage, death, and cleanup."""
-    if attacker == null or target == null:
-        return
-    
-    if not attacker.is_alive() or not target.is_alive():
-        return
-    
-    # Calculate damage from Power attribute
-    var effective_attrs: Attributes = attacker.get_effective_attributes()
-    var damage: int = effective_attrs.power
-    
-    # Apply class-specific on-attack effects (may modify damage)
-    if attacker is CharacterBattleEntity:
-        damage = _apply_class_specific_attack_effects(attacker as CharacterBattleEntity, target as EnemyBattleEntity, damage)
-    
-    # Apply damage
-    var actual_damage: int = target.take_damage(damage)
-    
-    # Log attack and damage
-    if combat_log != null:
-        combat_log.add_entry("%s attacks %s" % [attacker.display_name, target.display_name], combat_log.EventType.ATTACK)
-        combat_log.add_entry("%s attacks %s for %d damage!" % [attacker.display_name, target.display_name, actual_damage], combat_log.EventType.DAMAGE)
-    
-    # Update UI based on target type
-    if target.is_party_member():
-        combat_ui.update_party_displays()
-    else:
-        combat_ui.update_enemy_displays()
-    
-    # Check for death and handle it
-    if not target.is_alive():
-        handle_entity_death(target)
-    
-    action_completed.emit()
-
 func execute_action(action: Action) -> void:
-    """Execute a single action: apply damage and status effects, check for death."""
     if action == null:
         return
     
@@ -108,7 +71,6 @@ func execute_action(action: Action) -> void:
     action_completed.emit()
 
 func execute_item(character: CharacterBattleEntity, item: Item, _target: BattleEntity) -> void:
-    """Execute an item action."""
     # TODO: Implement item execution
     if combat_log != null:
         combat_log.add_entry("%s uses %s" % [character.display_name, item.item_name], combat_log.EventType.ITEM)
@@ -116,7 +78,6 @@ func execute_item(character: CharacterBattleEntity, item: Item, _target: BattleE
     action_completed.emit()
 
 func select_enemy_target() -> CharacterBattleEntity:
-    """AI target selection: prioritize taunt, otherwise random alive party member."""
     if battle_state == null:
         return null
     
@@ -140,18 +101,8 @@ func select_enemy_target() -> CharacterBattleEntity:
     
     return null
 
-func _apply_class_specific_attack_effects(attacker: CharacterBattleEntity, target: EnemyBattleEntity, base_damage: int) -> int:
-    """Apply class-specific on-attack effects. Returns modified damage."""
-    var behavior = MinigameRegistry.get_behavior(attacker.class_type)
-    if behavior != null:
-        return behavior.apply_attack_effects(attacker, target, base_damage)
-    return base_damage
-
-
 
 func handle_entity_death(entity: BattleEntity) -> void:
-    """Handle entity death: cleanup status effects, log death, emit signals.
-    Called after damage is applied (from actions or status effects)."""
     if entity == null:
         return
     

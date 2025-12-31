@@ -35,7 +35,6 @@ func _ready() -> void:
         initialize_combat()
 
 func _input(event: InputEvent) -> void:
-    """Handle input for canceling target selection."""
     if is_input_blocked:
         return  # Block input during delays and animations
     
@@ -43,11 +42,6 @@ func _input(event: InputEvent) -> void:
         target_selector.cancel_target_selection()
 
 func initialize_combat() -> void:
-    # Load encounter based on run state
-    if GameManager.current_run == null:
-        push_error("No current run available")
-        return
-    
     # Get next encounter from EncounterManager
     current_encounter = EncounterManager.get_next_encounter(
         GameManager.current_run.current_land_theme,
@@ -55,13 +49,8 @@ func initialize_combat() -> void:
         GameManager.current_run.encounter_progress
     )
     
-    if current_encounter == null:
-        push_error("Failed to load encounter")
-        return
-    
     # Clear combat log for new encounter
-    if combat_log != null:
-        combat_log.clear_log()
+    combat_log.clear_log()
     
     # Initialize modules
     combat_initializer = CombatInitializer.new()
@@ -95,37 +84,19 @@ func initialize_combat() -> void:
     _auto_save_battle_state()
     combat_ui.update_turn_order_display()
     
-    # Process first turn (in case it's an enemy turn)
+    # Process first turn
     _process_current_turn()
 
-# Enemy display connections now handled in CombatUI.display_enemies()
-
 func _on_attack_pressed() -> void:
-    # Validate it's a player character's turn
-    var current_combatant = turn_manager.get_current_turn_combatant()
-    if current_combatant == null:
-        print("No current combatant")
-        return
-    
-    # Check if it's a party member's turn
-    if battle_state.turn_order.is_empty() or battle_state.current_turn_index >= battle_state.turn_order.size():
-        print("Invalid turn state")
-        return
-    
-    var current_entry = battle_state.turn_order[battle_state.current_turn_index]
-    if not current_entry.is_party:
-        print("Not a player character's turn")
-        return
-    
-    var attacker: CharacterBattleEntity = current_combatant as CharacterBattleEntity
-    if not attacker.is_alive():
-        print("Attacker is dead")
-        return
+    var attacker := turn_manager.get_current_turn_combatant() as CharacterBattleEntity
     
     # Start target selection
     await _animate_party_displays_down()
     await _close_action_menu()
-    target_selector.start_target_selection(attacker)
+    
+    var damage := BattleHelper.calculate_base_attack_damage(attacker)
+    var attack_action := Action.new(attacker, [], damage, []) 
+    target_selector.start_target_selection(attacker, attack_action)
     attack_button.disabled = true
     item_button.disabled = true
     ability_button.disabled = true
@@ -134,50 +105,27 @@ func _on_item_pressed() -> void:
     # Placeholder
     if combat_log != null:
         combat_log.add_entry("Item action selected", combat_log.EventType.ITEM)
-    # TODO: After item action completes, call advance_turn()
-    # advance_turn()
 
 func _on_ability_pressed() -> void:
-    # Validate it's a player character's turn
-    var current_combatant = turn_manager.get_current_turn_combatant()
-    if current_combatant == null:
-        print("No current combatant")
-        return
-    
-    # Check if it's a party member's turn
-    if battle_state.turn_order.is_empty() or battle_state.current_turn_index >= battle_state.turn_order.size():
-        print("Invalid turn state")
-        return
-    
-    var current_entry = battle_state.turn_order[battle_state.current_turn_index]
-    if not current_entry.is_party:
-        print("Not a player character's turn")
-        return
-    
-    var character: CharacterBattleEntity = current_combatant as CharacterBattleEntity
-    if not character.is_alive():
-        print("CharacterBattleEntity is dead")
-        return
-    
-    # Check if modal is already open
-    if current_modal != null:
-        print("Modal already open")
-        return
+    var current_combatant := turn_manager.get_current_turn_combatant() as CharacterBattleEntity
     
     # Determine if target selection is needed
-    var needs_target: bool = _needs_target_selection(character.class_type)
+    var needs_target: bool = _needs_target_selection(current_combatant.class_type)
     
     if needs_target:
         # Start target selection for ability
         await _animate_party_displays_down()
         await _close_action_menu()
-        target_selector.start_ability_target_selection(character)
+        
         attack_button.disabled = true
         item_button.disabled = true
         ability_button.disabled = true
+        
+        target_selector.start_target_selection(current_combatant)\
+        .connect(_on_target_selected_minigame.bind(current_combatant), CONNECT_ONE_SHOT)
     else:
         # Open minigame modal directly
-        open_minigame_modal(character, null)
+        open_minigame_modal(current_combatant, null)
 
 func _on_win_pressed() -> void:
     # Temporary win button for testing progression
@@ -185,12 +133,6 @@ func _on_win_pressed() -> void:
     combat_state.complete_encounter()
 
 func _on_encounter_completed() -> void:
-    """Handle encounter completion signal from CombatState."""
-    # Handle encounter completion
-    if GameManager.current_run == null:
-        push_error("No current run available")
-        return
-    
     # Process rewards
     if current_encounter != null and current_encounter.rewards != null:
         _apply_rewards(current_encounter.rewards)
@@ -203,14 +145,12 @@ func _on_encounter_completed() -> void:
     SceneManager.go_to_land_screen()
 
 func _on_party_wipe() -> void:
-    """Handle party wipe signal from CombatState."""
     GameManager.end_run(false)
+    #TODO: display run stats w/e
     SceneManager.go_to_main_menu()
 
 func _on_character_died(_character: CharacterBattleEntity) -> void:
-    """Handle character death signal from ActionHandler."""
-    # UI updates happen automatically via signals (when refactor_09 is complete)
-    # For now, update displays manually
+    # TODO: is this necessary?
     combat_ui.update_party_displays()
     
     # Check for party wipe
@@ -218,7 +158,6 @@ func _on_character_died(_character: CharacterBattleEntity) -> void:
         combat_state.handle_party_wipe()
 
 func _on_enemy_died(enemy: EnemyBattleEntity) -> void:
-    """Handle enemy death signal from ActionHandler."""
     # Play death animation and sound
     SoundManager.play_sfx(SoundManager.SFX_ENEMY_DEATH)
     var effect_id = EffectIds.EffectIds.DEATH_EFFECT
@@ -236,21 +175,24 @@ func _on_enemy_died(enemy: EnemyBattleEntity) -> void:
     if combat_state.check_victory():
         combat_state.complete_encounter()
 
-func _on_target_selected(target: BattleEntity, is_ability: bool) -> void:
-    """Handle target selection signal from TargetSelector."""
+func _on_target_selected_minigame(target: BattleEntity, source: BattleEntity) -> void:
+    
+    pass
+
+func _on_target_selected(target: BattleEntity, source: BattleEntity) -> void:
     if target is EnemyBattleEntity:
         var enemy: EnemyBattleEntity = target as EnemyBattleEntity
         
-        if is_ability:
-            # Get character from current turn
+        if is_minigame_selection:
+            # can't use action.source b/c action is null in this case
+            # probably could send two different signals, but it may not be worth it
+            # this is probably fine
             var character: CharacterBattleEntity = turn_manager.get_current_turn_combatant() as CharacterBattleEntity
-            if character != null:
-                open_minigame_modal(character, enemy)
+            open_minigame_modal(character, enemy)
         else:
             # Handle as attack
             var attacker: CharacterBattleEntity = turn_manager.get_current_turn_combatant() as CharacterBattleEntity
-            if attacker != null:
-                await execute_player_attack(attacker, enemy)
+            await execute_player_attack(attacker, enemy, action)
 
 func _on_target_selection_canceled() -> void:
     """Handle target selection cancellation signal from TargetSelector."""
@@ -443,7 +385,6 @@ func _process_current_turn() -> void:
 # Target Selection System - now handled by TargetSelector
 
 func _needs_target_selection(class_type: GDScript) -> bool:
-    """Check if a class type requires target selection before minigame."""
     var behavior = MinigameRegistry.get_behavior(class_type)
     if behavior == null:
         return false
@@ -451,11 +392,6 @@ func _needs_target_selection(class_type: GDScript) -> bool:
 
 # Minigame Modal System
 func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity) -> void:
-    """Open minigame modal for the given character."""
-    if current_modal != null:
-        push_warning("Modal already open")
-        return
-    
     # Block input during minigame opening
     block_input()
     
@@ -623,18 +559,10 @@ func close_minigame_modal() -> void:
         await DelayManager.wait(DelayManager.MINIGAME_CLOSE_BEAT_DURATION)
 
 func _on_enemy_target_selected(enemy: EnemyBattleEntity) -> void:
-    """Handle enemy target selection for player attack or ability."""
     target_selector.handle_enemy_click(enemy)
 
 # Player Attack Implementation
-func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleEntity) -> void:
-    """Execute a player character's basic attack."""
-    if attacker == null or target == null:
-        return
-    
-    if not attacker.is_alive() or not target.is_alive():
-        return
-    
+func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleEntity, action: Action) -> void:
     # Block input during attack
     block_input()
     
@@ -655,7 +583,7 @@ func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleE
         combat_log.add_entry("%s's Berserk state ends! (stacks cleared)" % attacker.display_name, combat_log.EventType.ABILITY)
     
     # Execute attack via ActionHandler (handles damage and death)
-    action_handler.execute_attack(attacker, target)
+    action_handler.execute_action(action)
     
     # Visual feedback
     _show_damage_feedback(target, 0)  # Damage already logged by ActionHandler
@@ -700,11 +628,15 @@ func execute_enemy_attack(attacker: EnemyBattleEntity) -> void:
         _process_current_turn()
         return
     
+    # Calculate Damage
+    var damage = BattleHelper.calculate_base_attack_damage(attacker, target)
+    
     # Execute attack via ActionHandler (handles damage and death)
-    action_handler.execute_attack(attacker, target)
+    var action := Action.new(attacker, [target], damage, [])
+    action_handler.execute_action(action)
     
     # Visual feedback
-    _show_damage_feedback(target, 0)  # Damage already logged by ActionHandler
+    _show_damage_feedback(target, 0)
     
     # Advance turn
     turn_manager.advance_turn()
