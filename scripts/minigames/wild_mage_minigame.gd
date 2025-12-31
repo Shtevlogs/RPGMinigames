@@ -476,7 +476,14 @@ func _on_play_button_pressed() -> void:
     
     # Create result
     var result: MinigameResult = MinigameResult.new(true, _get_performance_score())
-    result.damage = damage
+    
+    # Create action with source, target and damage
+    var action = Action.new(character)
+    if target != null:
+        action.targets = [target]
+    action.damage = damage
+    
+    result.actions.append(action)
     
     # Create result data
     var result_data = WILD_MAGE_MINIGAME_RESULT_DATA.new()

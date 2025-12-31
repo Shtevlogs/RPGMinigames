@@ -256,13 +256,20 @@ func _on_stand_button_pressed() -> void:
     
     # Create result
     var result: MinigameResult = MinigameResult.new(not is_busted, _get_performance_score())
-    result.damage = damage
+    
+    # Create action with source, target and damage
+    var action = Action.new(character)
+    if target != null:
+        action.targets = [target]
+    action.damage = damage
     
     # Add berserk effect if berserking
     if is_berserking and berserk_stacks > 0:
         var effect = BERSERK_EFFECT.new(berserk_stacks)
         effect.target = character  # Self-target
-        result.add_status_effect(effect)
+        action.status_effects.append(effect)
+    
+    result.actions.append(action)
     
     # Create result data
     var result_data = BERSERKER_MINIGAME_RESULT_DATA.new()

@@ -117,8 +117,9 @@ func _on_resolve_pressed() -> void:
     
     # Create test result
     var test_result: MinigameResult = MinigameResult.new(true, 0.5)
-    test_result.damage = 10
-    test_result.effects = []
+    var test_action = Action.new()
+    test_action.damage = 10
+    test_result.actions.append(test_action)
     test_result.result_data = null  # No result data for test result
     
     # Complete minigame with test result

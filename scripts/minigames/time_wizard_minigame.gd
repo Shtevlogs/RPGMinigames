@@ -448,7 +448,14 @@ func _complete_minigame() -> void:
     
     # Create result
     var result: MinigameResult = MinigameResult.new(true, completion)
-    result.damage = damage
+    
+    # Create action with source, target and damage
+    var action = Action.new(character)
+    if target != null:
+        action.targets.append(target)
+    action.damage = damage
+    
+    result.actions.append(action)
     
     # Create result data
     var result_data = TIME_WIZARD_MINIGAME_RESULT_DATA.new()

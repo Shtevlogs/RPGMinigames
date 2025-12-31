@@ -357,6 +357,15 @@ func _complete_minigame() -> void:
     # Calculate damage
     var damage: int = _calculate_damage()
     
+    # Create result
+    var result: MinigameResult = MinigameResult.new(true, _get_performance_score())
+    
+    # Create action with source, target and damage
+    var action = Action.new(character)
+    if target != null:
+        action.targets = [target]
+    action.damage = damage
+    
     # Build effects array from card outcome
     # EQUIPMENT HOOK: Apply win/loss/tie effects from selected enemy card
     if selected_enemy_card != null:
@@ -374,10 +383,7 @@ func _complete_minigame() -> void:
                 # TODO: Create StatusEffect instances
                 pass  # Stubbed
     
-    # Create result
-    var result: MinigameResult = MinigameResult.new(true, _get_performance_score())
-    result.damage = damage
-    # Effects array is initialized as empty Array[StatusEffect] in MinigameResult
+    result.actions.append(action)
     
     # Create result data
     var result_data = MonkMinigameResultData.new()

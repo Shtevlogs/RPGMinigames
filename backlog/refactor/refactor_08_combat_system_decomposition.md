@@ -4,7 +4,9 @@
 
 ## Description
 
-Break down the monolithic `combat.gd` file (1451 lines) into focused, single-responsibility modules. Extract turn management, action handling, target selection, UI management, combat initialization, and state management into separate classes. This improves maintainability, testability, and makes the codebase more AI-friendly.
+Break down the monolithic `combat.gd` file (1315 lines) into focused, single-responsibility modules. Extract turn management, action handling, target selection, UI management, combat initialization, and state management into separate classes. This improves maintainability, testability, and makes the codebase more AI-friendly.
+
+**Note**: After refactor_07, BattleState is now the source of truth for combat state. Entities are stored directly in BattleState (CharacterBattleEntity/EnemyBattleEntity), not as snapshots. Entities are modified directly after accessing through BattleState - no wrapper methods needed.
 
 **Design Philosophy**: The combat system has grown too large and handles too many responsibilities. Following the Single Responsibility Principle, each module should have one clear purpose. This makes the code easier to understand, test, and modify. Smaller, focused files are also easier for AI to work with.
 
@@ -14,7 +16,7 @@ Break down the monolithic `combat.gd` file (1451 lines) into focused, single-res
 > "Once these refactors are done, we will look at at combat.gd again to see if we can break any functionality out of here for better organization. Specifically I'm thinking the end-of-combat logic, run management, scene setting, turn management, saving, blocking and unblocking input, highlighting, input handling, turn order ui, minigame initialization, - I could go on. It's a lot of things for one file to do."
 
 ### From ARCHITECTURE_PRIMER.md:
-- `combat.gd` is 1451 lines
+- `combat.gd` is 1315 lines
 - Handles: turn order, actions, target selection, minigame integration, status effects, death handling, UI updates, input handling, animations, state management
 - Too many responsibilities in one file
 - Difficult to navigate and maintain
@@ -30,6 +32,7 @@ Break down the monolithic `combat.gd` file (1451 lines) into focused, single-res
 - **refactor_01_battle_entity_base_class.md** - BattleEntity simplifies entity handling
 - **refactor_02_status_effect_system_refactor.md** - Status effects should be stable
 - **refactor_04_minigame_result_type_safety.md** - Minigame results should be stable
+- **refactor_07_battle_state_source_of_truth.md** - BattleState is now the source of truth for combat state
 
 **Recommended Dependencies**:
 - Other refactors should be complete to avoid rework
@@ -38,7 +41,7 @@ Break down the monolithic `combat.gd` file (1451 lines) into focused, single-res
 
 ### Current Architecture
 
-1. **combat.gd** (1451 lines) handles:
+1. **combat.gd** (1315 lines) handles:
    - Combat initialization and setup
    - Turn order calculation and management
    - Turn processing (party and enemy turns)
@@ -54,6 +57,13 @@ Break down the monolithic `combat.gd` file (1451 lines) into focused, single-res
    - Battle state management
    - Auto-save integration
    - Scene transitions
+
+2. **BattleState Architecture** (after refactor_07):
+   - BattleState stores entities directly (CharacterBattleEntity/EnemyBattleEntity), not as snapshots
+   - Entities are modified directly after accessing through `battle_state.party_states` or `battle_state.enemy_states`
+   - No wrapper methods needed (e.g., `battle_state.party_states[0].take_damage(10)`)
+   - BattleState is the exclusive access point for all entities during combat
+   - Turn order is stored in `battle_state.turn_order` and managed directly
 
 2. **Problems**:
    - Too many responsibilities
@@ -124,132 +134,237 @@ Based on analysis, these modules should be extracted:
 class_name TurnManager
 extends RefCounted
 
-var turn_order: Array[TurnOrderEntry] = []
-var current_turn_index: int = 0
+var battle_state: BattleState
 
-func calculate_initial_turn_order(party: Array[Character], enemies: Array[EnemyData]) -> void
+func _init(p_battle_state: BattleState):
+    battle_state = p_battle_state
+
+func calculate_initial_turn_order() -> void
 func advance_turn() -> void
 func get_current_turn_combatant() -> BattleEntity
-func remove_combatant_from_turn_order(entity_id: String) -> void
+func remove_dead_combatants() -> void
 ```
+
+**Note**: TurnManager works directly with `battle_state.turn_order` - no local copy maintained. All turn order operations modify `battle_state.turn_order` directly.
 
 **ActionHandler**:
 ```gdscript
 class_name ActionHandler
 extends RefCounted
 
+var battle_state: BattleState
+
+func _init(p_battle_state: BattleState):
+    battle_state = p_battle_state
+
 func execute_attack(attacker: BattleEntity, target: BattleEntity) -> void
-func execute_ability(character: Character, target: BattleEntity) -> void
-func execute_item(character: Character, item: Item, target: BattleEntity) -> void
+func execute_ability(character: CharacterBattleEntity, target: BattleEntity) -> void
+func execute_item(character: CharacterBattleEntity, item: Item, target: BattleEntity) -> void
 ```
+
+**Note**: ActionHandler receives BattleState in constructor. Entities are accessed through BattleState and modified directly (e.g., `target.take_damage(amount)` after accessing through `battle_state.party_states` or `battle_state.enemy_states`).
 
 **TargetSelector**:
 ```gdscript
 class_name TargetSelector
 extends RefCounted
 
+var battle_state: BattleState
+var party_container: HBoxContainer
+var enemy_container: Control
+
 signal target_selected(target: BattleEntity)
 signal selection_canceled
+
+func _init(p_battle_state: BattleState, p_party_container: HBoxContainer, p_enemy_container: Control):
+    battle_state = p_battle_state
+    party_container = p_party_container
+    enemy_container = p_enemy_container
 
 func start_target_selection(attacker: BattleEntity, target_type: TargetType) -> void
 func cancel_target_selection() -> void
 func is_selecting() -> bool
 ```
 
+**CombatUI**:
+```gdscript
+class_name CombatUI
+extends RefCounted
+
+var battle_state: BattleState
+var party_container: HBoxContainer
+var enemy_container: Control
+var turn_order_container: HBoxContainer
+
+func _init(p_battle_state: BattleState, p_party_container: HBoxContainer, p_enemy_container: Control, p_turn_order_container: HBoxContainer):
+    battle_state = p_battle_state
+    party_container = p_party_container
+    enemy_container = p_enemy_container
+    turn_order_container = p_turn_order_container
+
+func update_party_displays() -> void
+func update_enemy_displays() -> void
+func update_turn_order_display() -> void
+func highlight_party_member(character: CharacterBattleEntity, highlight: bool) -> void
+func highlight_enemy(enemy: EnemyBattleEntity, highlight: bool) -> void
+```
+
+**CombatInitializer**:
+```gdscript
+class_name CombatInitializer
+extends RefCounted
+
+func initialize_combat(encounter: Encounter, party: Array[CharacterBattleEntity]) -> BattleState
+func setup_displays(combat_ui: CombatUI) -> void
+func show_encounter_message(encounter: Encounter) -> void
+```
+
+**CombatState**:
+```gdscript
+class_name CombatState
+extends RefCounted
+
+var battle_state: BattleState
+
+func _init(p_battle_state: BattleState):
+    battle_state = p_battle_state
+
+func check_victory() -> bool
+func check_defeat() -> bool
+func complete_encounter() -> void
+func handle_party_wipe() -> void
+```
+
 ## Implementation Plan
 
-### Phase 1: Extract TurnManager
+### Phase 1: Extract TurnManager + CombatUI
+
+**Rationale**: These modules are relatively independent and have high impact on code organization. TurnManager handles core combat flow, while CombatUI handles all display updates.
 
 1. **Create `scripts/combat/turn_manager.gd`**:
+   - Receive `battle_state: BattleState` in constructor
+   - Work directly with `battle_state.turn_order` (no local copy)
    - Move turn order calculation logic
    - Move turn advancement logic
-   - Move current turn tracking
+   - Move current turn tracking (via `battle_state.current_turn_index`)
    - Move dead combatant removal
    - Keep interface simple and focused
 
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `TurnManager` instance
-   - Delegate turn order operations to manager
-   - Update references to use manager
-
-### Phase 2: Extract ActionHandler
-
-1. **Create `scripts/combat/action_handler.gd`**:
-   - Move attack execution logic
-   - Move ability execution logic (minigame integration)
-   - Move item execution logic
-   - Handle action results
-
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `ActionHandler` instance
-   - Delegate action execution to handler
-   - Update action button handlers
-
-### Phase 3: Extract TargetSelector
-
-1. **Create `scripts/combat/target_selector.gd`**:
-   - Move target selection state
-   - Move target selection UI logic
-   - Move target validation
-   - Emit signals for selection/cancel
-
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `TargetSelector` instance
-   - Connect to selector signals
-   - Delegate target selection to selector
-
-### Phase 4: Extract CombatUI
-
-1. **Create `scripts/combat/combat_ui.gd`**:
+2. **Create `scripts/combat/combat_ui.gd`**:
+   - Receive UI node references and BattleState in constructor
    - Move party display update logic
    - Move enemy display update logic
    - Move turn order display logic
    - Move action menu management
    - Move highlighting logic
 
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `CombatUI` instance
-   - Delegate UI updates to UI manager
-   - Pass UI node references to manager
+3. **Update `scripts/scenes/combat.gd`**:
+   - Create `TurnManager` instance with `battle_state`
+   - Create `CombatUI` instance with UI nodes and `battle_state`
+   - Delegate turn order operations to TurnManager
+   - Delegate UI updates to CombatUI
+   - Update references to use managers
 
-### Phase 5: Extract CombatInitializer
+4. **Testing**:
+   - Verify turn order management works correctly
+   - Verify UI updates reflect state changes
+   - Verify BattleState remains source of truth
+
+### Phase 2: Extract ActionHandler + TargetSelector
+
+**Rationale**: These modules work closely together - ActionHandler needs target selection for attacks and abilities.
+
+1. **Create `scripts/combat/action_handler.gd`**:
+   - Receive `battle_state: BattleState` in constructor
+   - Move attack execution logic
+   - Move ability execution logic (minigame integration)
+   - Move item execution logic
+   - Handle action results
+   - Access entities through BattleState and modify directly
+
+2. **Create `scripts/combat/target_selector.gd`**:
+   - Receive UI node references and BattleState in constructor
+   - Move target selection state
+   - Move target selection UI logic
+   - Move target validation
+   - Emit signals for selection/cancel
+
+3. **Update `scripts/scenes/combat.gd`**:
+   - Create `ActionHandler` instance with `battle_state`
+   - Create `TargetSelector` instance with UI nodes and `battle_state`
+   - Connect TargetSelector signals to ActionHandler
+   - Delegate action execution to ActionHandler
+   - Delegate target selection to TargetSelector
+   - Update action button handlers
+
+4. **Testing**:
+   - Verify attack actions work correctly
+   - Verify ability actions work correctly
+   - Verify target selection integrates with actions
+   - Verify entities are accessed through BattleState
+
+### Phase 3: Extract CombatInitializer + CombatState
+
+**Rationale**: These modules handle combat lifecycle - initialization and completion.
 
 1. **Create `scripts/combat/combat_initializer.gd`**:
+   - Receive encounter data and party data
    - Move encounter loading
    - Move battle state initialization
-   - Move display setup
+   - Move display setup (delegates to CombatUI)
    - Move encounter message display
 
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `CombatInitializer` instance
-   - Delegate initialization to initializer
-   - Simplify `initialize_combat()`
-
-### Phase 6: Extract CombatState
-
-1. **Create `scripts/combat/combat_state.gd`**:
+2. **Create `scripts/combat/combat_state.gd`**:
+   - Receive `battle_state: BattleState` in constructor
    - Move victory condition checking
    - Move defeat condition checking
    - Move end-of-combat logic
    - Move rewards handling
+   - Handle scene transitions (via signals or callbacks)
 
-2. **Update `scripts/scenes/combat.gd`**:
-   - Create `CombatState` instance
-   - Delegate state checks to state manager
+3. **Update `scripts/scenes/combat.gd`**:
+   - Create `CombatInitializer` instance
+   - Create `CombatState` instance with `battle_state`
+   - Delegate initialization to CombatInitializer
+   - Delegate state checks to CombatState
+   - Simplify `initialize_combat()`
    - Handle state transitions
 
-### Phase 7: Refactor Combat.gd
+4. **Testing**:
+   - Verify combat initializes correctly
+   - Verify victory conditions are detected
+   - Verify defeat conditions are detected
+   - Verify rewards are applied correctly
+
+### Final Phase: Refactor Combat.gd to Orchestrator
 
 1. **Simplify `scripts/scenes/combat.gd`**:
-   - Keep only orchestration logic
-   - Coordinate between modules
-   - Handle scene-level concerns
-   - Keep input handling (or extract to InputManager)
+   - **Keep scene management responsibilities**:
+     - Scene node references (@onready vars for UI elements)
+     - Signal connections (button presses, UI events)
+     - Module instantiation and wiring
+     - Scene-level orchestration (coordinating modules)
+     - Input handling (scene-level input blocking/unblocking)
+     - Scene transitions (to land screen, main menu)
+   - **Delegate to modules**:
+     - Turn order management → TurnManager
+     - Action execution → ActionHandler
+     - Target selection → TargetSelector
+     - UI updates → CombatUI
+     - Combat initialization → CombatInitializer
+     - Victory/defeat logic → CombatState
 
 2. **Update Module Integration**:
    - Ensure modules communicate correctly
    - Use signals for module communication
-   - Keep combat.gd as coordinator
+   - Keep combat.gd as scene-level coordinator
+   - Verify all scene-level concerns are handled
+
+3. **Testing**:
+   - Verify all combat functionality still works
+   - Verify modules communicate correctly
+   - Verify scene transitions work
+   - Verify input blocking/unblocking works
 
 ## Related Files
 
@@ -296,6 +411,34 @@ Modules should communicate via:
 - **Method Calls**: For direct operations (execute action, update UI)
 - **Shared State**: BattleState for shared data
 
+### BattleState Integration Pattern
+
+After refactor_07, BattleState is the source of truth for all combat state. Modules must access entities through BattleState:
+
+**Entity Access Pattern**:
+```gdscript
+# Access entities through BattleState
+var character: CharacterBattleEntity = battle_state.party_states[0]
+var enemy: EnemyBattleEntity = battle_state.enemy_states[0]
+
+# Modify entities directly (no wrapper methods needed)
+character.take_damage(10)
+enemy.add_status_effect(effect)
+```
+
+**Turn Order Management**:
+- TurnManager works directly with `battle_state.turn_order`
+- No local copy of turn order is maintained
+- All turn order operations modify `battle_state.turn_order` directly
+- Current turn index is tracked via `battle_state.current_turn_index`
+
+**Key Principles**:
+- BattleState is the exclusive access point for all entities during combat
+- Entities are stored directly in BattleState (not as snapshots)
+- Entities are modified directly after accessing through BattleState
+- No sync methods needed - entities in BattleState are the source of truth
+- Modules receive BattleState in constructor for entity access
+
 ## Alternative Approaches
 
 ### Option A: Full Decomposition
@@ -312,7 +455,44 @@ Modules should communicate via:
 - Leave combat.gd as monolithic file
 - Easier short-term but harder long-term
 
+## Combat.gd Role and Responsibilities
+
+**Combat.gd is the root script for combat.tscn** and retains scene management and wiring responsibilities:
+
+### Scene Management
+- **Node References**: Manages @onready node references (party_container, enemy_container, buttons, turn_order_container, etc.)
+- **Signal Connections**: Handles signal connections from UI elements (button presses, enemy clicks, etc.)
+- **Scene Lifecycle**: Manages scene lifecycle methods (_ready, _input, etc.)
+
+### Module Orchestration
+- **Module Instantiation**: Creates module instances with required dependencies (BattleState, UI node references)
+- **Module Wiring**: Connects module signals to combat.gd handlers
+- **Operation Delegation**: Delegates operations to appropriate modules:
+  - Turn order management → TurnManager
+  - Action execution → ActionHandler
+  - Target selection → TargetSelector
+  - UI updates → CombatUI
+  - Combat initialization → CombatInitializer
+  - Victory/defeat logic → CombatState
+- **High-Level Flow**: Maintains high-level combat flow and coordinates between modules
+
+### Scene-Level Concerns
+- **Input Handling**: Manages scene-level input blocking/unblocking (is_input_blocked flag)
+- **Scene Transitions**: Handles scene transitions via SceneManager (to land screen, main menu)
+- **Auto-Save Coordination**: Coordinates auto-save calls to SaveManager
+- **Combat Log Integration**: Passes combat log reference to modules that need it
+
+### What Combat.gd Does NOT Do
+- Turn order calculation (delegated to TurnManager)
+- Action execution logic (delegated to ActionHandler)
+- Target selection UI (delegated to TargetSelector)
+- Display updates (delegated to CombatUI)
+- Combat initialization logic (delegated to CombatInitializer)
+- Victory/defeat checking (delegated to CombatState)
+
+**Design Philosophy**: Combat.gd is a thin orchestrator that wires modules together and handles scene-specific concerns. All combat logic is delegated to focused, single-responsibility modules.
+
 ## Status
 
-Pending (Depends on refactor_01, refactor_02, refactor_04)
+Pending (Depends on refactor_01, refactor_02, refactor_04, refactor_07)
 
