@@ -6,6 +6,8 @@ extends Node
 # MinigameRegistry - Maps class types to their minigame scenes and behaviors
 # Provides centralized registration and lookup for class-specific minigame data
 
+#TODO: honestly, this can probably be replaced with properties on the behaviours and characterbattleentities
+
 var class_behaviors: Dictionary = {}  # GDScript -> BaseClassBehavior instance
 var minigame_scenes: Dictionary = {}  # GDScript -> scene path
 var class_type_to_string: Dictionary = {}  # GDScript -> String (for serialization/display)

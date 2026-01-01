@@ -64,8 +64,6 @@ func initialize_combat() -> void:
     combat_state = CombatState.new(battle_state, combat_log)
     
     # Wire module signals
-    target_selector.target_selected.connect(_on_target_selected)
-    target_selector.selection_canceled.connect(_on_target_selection_canceled)
     combat_state.encounter_completed.connect(_on_encounter_completed)
     combat_state.party_wipe.connect(_on_party_wipe)
     action_handler.character_died.connect(_on_character_died)
@@ -94,9 +92,8 @@ func _on_attack_pressed() -> void:
     await _animate_party_displays_down()
     await _close_action_menu()
     
-    var damage := BattleHelper.calculate_base_attack_damage(attacker)
-    var attack_action := Action.new(attacker, [], damage, []) 
-    target_selector.start_target_selection(attacker, attack_action)
+    target_selector.start_target_selection(attacker)\
+        .connect(_on_target_selected.bind(attacker), CONNECT_ONE_SHOT)
     attack_button.disabled = true
     item_button.disabled = true
     ability_button.disabled = true
@@ -122,7 +119,7 @@ func _on_ability_pressed() -> void:
         ability_button.disabled = true
         
         target_selector.start_target_selection(current_combatant)\
-        .connect(_on_target_selected_minigame.bind(current_combatant), CONNECT_ONE_SHOT)
+            .connect(open_minigame_modal.bind(current_combatant), CONNECT_ONE_SHOT)
     else:
         # Open minigame modal directly
         open_minigame_modal(current_combatant, null)
@@ -175,27 +172,11 @@ func _on_enemy_died(enemy: EnemyBattleEntity) -> void:
     if combat_state.check_victory():
         combat_state.complete_encounter()
 
-func _on_target_selected_minigame(target: BattleEntity, source: BattleEntity) -> void:
-    
-    pass
-
 func _on_target_selected(target: BattleEntity, source: BattleEntity) -> void:
-    if target is EnemyBattleEntity:
-        var enemy: EnemyBattleEntity = target as EnemyBattleEntity
-        
-        if is_minigame_selection:
-            # can't use action.source b/c action is null in this case
-            # probably could send two different signals, but it may not be worth it
-            # this is probably fine
-            var character: CharacterBattleEntity = turn_manager.get_current_turn_combatant() as CharacterBattleEntity
-            open_minigame_modal(character, enemy)
-        else:
-            # Handle as attack
-            var attacker: CharacterBattleEntity = turn_manager.get_current_turn_combatant() as CharacterBattleEntity
-            await execute_player_attack(attacker, enemy, action)
+    #TODO: handle targeting ally
+    await execute_player_attack(source, target)
 
 func _on_target_selection_canceled() -> void:
-    """Handle target selection cancellation signal from TargetSelector."""
     await _animate_party_displays_up()
     await _open_action_menu()
     attack_button.disabled = false
@@ -272,7 +253,6 @@ func _complete_run() -> void:
 # Battle State Management - now handled by CombatInitializer
 
 func _auto_save_battle_state() -> void:
-    """Auto-save battle state after turn order is determined."""
     if battle_state == null or GameManager.current_run == null:
         return
     
@@ -286,19 +266,14 @@ func _auto_save_battle_state() -> void:
     SaveManager.auto_save(GameManager.current_run)
 
 func block_input() -> void:
-    """Block input during delays and animations."""
     is_input_blocked = true
     set_process_input(false)
 
 func unblock_input() -> void:
-    """Unblock input after delays and animations."""
     is_input_blocked = false
     set_process_input(true)
 
-# Encounter message now handled by CombatInitializer
-
 func _highlight_current_turn(entry: TurnOrderEntry) -> void:
-    """Highlight current turn combatant with delay."""
     var combatant: BattleEntity = entry.combatant
     if combatant == null:
         return
@@ -313,26 +288,22 @@ func _highlight_current_turn(entry: TurnOrderEntry) -> void:
         combat_ui.highlight_enemy(combatant as EnemyBattleEntity, false)
 
 func _animate_party_displays_down() -> void:
-    """Animate party displays down (for target selection)."""
     # TODO: Implement actual animation
     # For now, just wait for delay
     await DelayManager.wait(DelayManager.TARGET_SELECTION_ARROW_DELAY)
 
 func _animate_party_displays_up() -> void:
-    """Animate party displays back up (after canceling target selection)."""
     # TODO: Implement actual animation
     # For now, just wait for delay
     await DelayManager.wait(DelayManager.TARGET_SELECTION_ARROW_DELAY)
 
 func _open_action_menu() -> void:
-    """Open action menu with slide-in animation."""
     # TODO: Implement actual slide-in animation
     # For now, just wait for delay
     await DelayManager.wait(DelayManager.ACTION_MENU_BEAT_DURATION)
     SoundManager.play_sfx(SoundManager.SFX_ACTION_MENU_SELECT)
 
 func _close_action_menu() -> void:
-    """Close action menu with slide-out animation."""
     # TODO: Implement actual slide-out animation
     # For now, just wait for delay
     await DelayManager.wait(DelayManager.ACTION_MENU_BEAT_DURATION)
@@ -340,7 +311,6 @@ func _close_action_menu() -> void:
 # Turn Order System - now handled by TurnManager
 
 func _process_current_turn() -> void:
-    """Process the current turn - execute enemy attacks automatically."""
     if battle_state.turn_order.is_empty() or battle_state.current_turn_index >= battle_state.turn_order.size():
         return
     
@@ -453,7 +423,6 @@ func open_minigame_modal(character: CharacterBattleEntity, target: BattleEntity)
 # Context building is now handled directly by behavior classes - no conversion needed
 
 func _on_minigame_modal_closed() -> void:
-    """Handle minigame modal closing."""
     # Clean up modal reference
     current_modal = null
     
@@ -463,7 +432,6 @@ func _on_minigame_modal_closed() -> void:
     ability_button.disabled = false
 
 func _on_minigame_completed(result: MinigameResult) -> void:
-    """Handle minigame completion - apply effects and advance turn."""
     # Block input during minigame closing
     block_input()
     
@@ -503,7 +471,6 @@ func _on_minigame_completed(result: MinigameResult) -> void:
     _process_current_turn()
 
 func _apply_minigame_result(character: CharacterBattleEntity, result: MinigameResult, _target: BattleEntity) -> void:
-    """Apply minigame result effects to combat."""
     if result == null:
         return
     
@@ -515,7 +482,6 @@ func _apply_minigame_result(character: CharacterBattleEntity, result: MinigameRe
         action_handler.execute_action(action)
 
 func _log_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> void:
-    """Add combat log entries for minigame results based on character class."""
     if combat_log == null or result == null:
         return
     
@@ -527,7 +493,6 @@ func _log_minigame_result(character: CharacterBattleEntity, result: MinigameResu
             combat_log.add_entry(entry, combat_log.EventType.ABILITY)
 
 func _process_combatant_status_effects(combatant: BattleEntity) -> void:
-    """Process status effects for a combatant at the start of their turn."""
     # Store health before processing to detect changes
     var health_before: int = combatant.health.current
     
@@ -551,7 +516,6 @@ func _process_combatant_status_effects(combatant: BattleEntity) -> void:
 
 
 func close_minigame_modal() -> void:
-    """Close the current minigame modal."""
     if current_modal != null:
         current_modal.close_modal()
         current_modal = null
@@ -562,7 +526,7 @@ func _on_enemy_target_selected(enemy: EnemyBattleEntity) -> void:
     target_selector.handle_enemy_click(enemy)
 
 # Player Attack Implementation
-func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleEntity, action: Action) -> void:
+func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleEntity) -> void:
     # Block input during attack
     block_input()
     
@@ -573,14 +537,9 @@ func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleE
     await _flash_target(target)
     await DelayManager.wait(DelayManager.ATTACK_ANIMATION_DURATION)
     
-    # Check if berserk state will be cleared (for logging)
-    var was_berserking: bool = false
-    if attacker.class_type == BerserkerBehavior:
-        was_berserking = attacker.class_state.get("is_berserking", false)
-    
-    # Log berserk state clearing if applicable
-    if was_berserking and combat_log != null:
-        combat_log.add_entry("%s's Berserk state ends! (stacks cleared)" % attacker.display_name, combat_log.EventType.ABILITY)
+    # Create attack action
+    var behavior := MinigameRegistry.get_behavior(attacker.class_type)
+    var action := behavior.get_attack_action(attacker, target, combat_log)
     
     # Execute attack via ActionHandler (handles damage and death)
     action_handler.execute_action(action)
@@ -598,20 +557,17 @@ func execute_player_attack(attacker: CharacterBattleEntity, target: EnemyBattleE
     _process_current_turn()
 
 func _shake_party_display(_character: CharacterBattleEntity) -> void:
-    """Shake party member display during action execution."""
     # TODO: Implement actual shake animation
     # For now, just wait for delay
     await DelayManager.wait(0.1)
 
 func _flash_target(_target: BattleEntity) -> void:
-    """Flash target during attack animation."""
     # TODO: Implement actual flash animation (toggle alpha)
     # For now, just wait for delay
     await DelayManager.wait(0.1)
 
 # Enemy Attack Implementation
 func execute_enemy_attack(attacker: EnemyBattleEntity) -> void:
-    """Execute an enemy's basic attack."""
     if attacker == null:
         return
     
@@ -646,7 +602,6 @@ func execute_enemy_attack(attacker: EnemyBattleEntity) -> void:
 
 # Visual Feedback and UI Updates
 func _show_damage_feedback(_target: BattleEntity, _damage: int) -> void:
-    """Show damage feedback (placeholder - can be enhanced with floating text later)."""
     # TODO: Implement floating damage numbers or damage popup
     pass
 

@@ -21,12 +21,6 @@ func get_minigame_scene_path() -> String:
     push_error("get_minigame_scene_path() must be implemented in subclass")
     return ""
 
-# Apply on-attack effects (modifies damage, applies debuffs, etc.)
-# Returns modified damage value
-func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
-    # Default: no modification
-    return base_damage
-
 # Format minigame result for logging
 # Returns array of log entry strings
 func format_minigame_result(_character: CharacterBattleEntity, _result: MinigameResult) -> Array[String]:
@@ -37,3 +31,10 @@ func format_minigame_result(_character: CharacterBattleEntity, _result: Minigame
 func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
     # Default: return null (target should be provided)
     return null
+
+# Can be overridden in class behaviours to do class-specific on-hit effects
+func get_attack_action(character: CharacterBattleEntity, target: BattleEntity, _combat_log: CombatLog) -> Action:
+    var damage := BattleHelper.calculate_base_attack_damage(character, target)
+    var action := Action.new(character, [target], damage, [])
+    
+    return action

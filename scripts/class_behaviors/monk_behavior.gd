@@ -1,15 +1,10 @@
 class_name MonkBehavior
 extends BaseClassBehavior
 
-const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
-const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
-const MONK_MINIGAME_RESULT_DATA = preload("res://scripts/data/monk_minigame_result_data.gd")
-
 func needs_target_selection() -> bool:
     return true  # Monk needs target selection
 
 func build_minigame_context(character: CharacterBattleEntity, target: BattleEntity) -> MinigameContext:
-    """Build context data for Monk minigame."""
     if target == null or not (target is EnemyBattleEntity):
         return null
     
@@ -32,7 +27,7 @@ func build_minigame_context(character: CharacterBattleEntity, target: BattleEnti
     else:
         redos = 0
     
-    var context = MONK_MINIGAME_CONTEXT.new(
+    var context = MonkMinigameContext.new(
         character,
         target,
         enemy_effective_attrs.strategy,
@@ -46,16 +41,7 @@ func build_minigame_context(character: CharacterBattleEntity, target: BattleEnti
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/monk_minigame.tscn"
 
-func apply_attack_effects(_attacker: CharacterBattleEntity, target: EnemyBattleEntity, base_damage: int) -> int:
-    """Monk attack effects: reduce target's Strategy by 1 (stacking)."""
-    # Apply AlterAttributeEffect to reduce Strategy by 1
-    # Duration of 99 turns (effectively until end of encounter or removed)
-    var strategy_debuff = ALTER_ATTRIBUTE_EFFECT.new("strategy", -1, 99)
-    target.add_status_effect(strategy_debuff)
-    return base_damage
-
 func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
-    """Format Monk minigame results for logging."""
     var log_entries: Array[String] = []
     
     if result == null:
@@ -104,5 +90,14 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
     return log_entries
 
 func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
-    """Monk needs a target, so return null (target should be provided)."""
     return null
+
+func get_attack_action(character: CharacterBattleEntity, target: BattleEntity, combat_log: CombatLog) -> Action:
+    var attack_action := super.get_attack_action(character, target, combat_log)
+    
+    #TODO: add a way for an effect to be actually permanent
+    var strategy_debuff = AlterAttributeEffect.new("strategy", -1, 99)
+    strategy_debuff.target = target
+    attack_action.status_effects.append(strategy_debuff)
+    
+    return attack_action

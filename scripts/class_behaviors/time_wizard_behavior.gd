@@ -35,14 +35,7 @@ func build_minigame_context(character: CharacterBattleEntity, _target: BattleEnt
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/time_wizard_minigame.tscn"
 
-func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
-    """Time Wizard attack effects: partially clear board for next ability cast."""
-    # TODO: Track board state and apply pre-cleared squares
-    # For now, stubbed
-    return base_damage
-
 func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
-    """Format Time Wizard minigame results for logging."""
     var log_entries: Array[String] = []
     
     if result == null:
@@ -68,5 +61,10 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
     return log_entries
 
 func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
-    """Time Wizard needs a target, so return null (target should be provided)."""
     return null
+
+func get_attack_action(character: CharacterBattleEntity, target: BattleEntity, combat_log: CombatLog) -> Action:
+    var attack_action := super.get_attack_action(character, target, combat_log)
+    # TODO: Track board state and apply pre-cleared squares
+    # For now, stubbed
+    return attack_action

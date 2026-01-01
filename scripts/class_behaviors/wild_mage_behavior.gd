@@ -8,7 +8,6 @@ func needs_target_selection() -> bool:
     return false  # WildMage doesn't need target selection
 
 func build_minigame_context(character: CharacterBattleEntity, _target: BattleEntity) -> MinigameContext:
-    """Build context data for Wild Mage minigame."""
     var effective_attrs: Attributes = character.get_effective_attributes()
     var class_state = character.class_state
     
@@ -31,14 +30,7 @@ func build_minigame_context(character: CharacterBattleEntity, _target: BattleEnt
 func get_minigame_scene_path() -> String:
     return "res://scenes/minigames/wild_mage_minigame.tscn"
 
-func apply_attack_effects(_attacker: CharacterBattleEntity, _target: EnemyBattleEntity, base_damage: int) -> int:
-    """Wild Mage attack effects: pre-draw a card for next minigame."""
-    # TODO: Track pre-drawn card state for next minigame
-    # For now, stubbed
-    return base_damage
-
 func format_minigame_result(character: CharacterBattleEntity, result: MinigameResult) -> Array[String]:
-    """Format Wild Mage minigame results for logging."""
     var log_entries: Array[String] = []
     
     if result == null:
@@ -70,5 +62,10 @@ func format_minigame_result(character: CharacterBattleEntity, result: MinigameRe
     return log_entries
 
 func get_ability_target(_character: CharacterBattleEntity, _result: MinigameResult) -> Variant:
-    """WildMage may hit all enemies/allies, so return null (target should be provided)."""
     return null
+
+func get_attack_action(character: CharacterBattleEntity, target: BattleEntity, combat_log: CombatLog) -> Action:
+    var attack_action := super.get_attack_action(character, target, combat_log)
+    # TODO: Track pre-drawn card state for next minigame
+    # For now, stubbed
+    return attack_action
