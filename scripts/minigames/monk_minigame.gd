@@ -1,9 +1,6 @@
 class_name MonkMinigame
 extends BaseMinigame
 
-const MONK_MINIGAME_CONTEXT = preload("res://scripts/data/monk_minigame_context.gd")
-const MONK_MINIGAME_RESULT_DATA = preload("res://scripts/data/monk_minigame_result_data.gd")
-
 # Monk minigame - Rock Paper Scissors implementation
 # Core RPS mechanics with enemy cards, win/loss/tie effects, and redo system
 
@@ -60,7 +57,6 @@ var redos_used: int = 0  # How many redos have been used
 var game_complete: bool = false
 
 func _setup_ui_references() -> void:
-    """Set up UI node references. Can be called multiple times safely."""
     if status_label != null:
         return  # Already set up
     
@@ -113,7 +109,6 @@ func initialize_minigame() -> void:
     _update_display()
 
 func _generate_enemy_cards(context: MonkMinigameContext) -> void:
-    """Generate enemy RPS cards. Extensible for enemy-specific cards."""
     enemy_cards.clear()
     
     # EQUIPMENT HOOK: Check if enemy-specific cards are provided in context
@@ -152,7 +147,6 @@ func _generate_enemy_cards(context: MonkMinigameContext) -> void:
             enemy_cards.append(card)
 
 func _resolve_rps(move: String, enemy_card: EnemyCard) -> String:
-    """Resolve RPS: returns "win", "loss", or "tie"."""
     var enemy_type: String = enemy_card.rps_type
     
     # Strike (Rock) beats Scissors, loses to Paper, ties with Rock
@@ -185,7 +179,6 @@ func _resolve_rps(move: String, enemy_card: EnemyCard) -> String:
     return "loss"  # Default to loss if invalid move
 
 func _on_strike_button_pressed() -> void:
-    """Handle strike button press."""
     if game_complete:
         return
     
@@ -194,7 +187,6 @@ func _on_strike_button_pressed() -> void:
     _update_display()
 
 func _on_grapple_button_pressed() -> void:
-    """Handle grapple button press."""
     if game_complete:
         return
     
@@ -203,7 +195,6 @@ func _on_grapple_button_pressed() -> void:
     _update_display()
 
 func _on_counter_button_pressed() -> void:
-    """Handle counter button press."""
     if game_complete:
         return
     
@@ -212,7 +203,6 @@ func _on_counter_button_pressed() -> void:
     _update_display()
 
 func _on_confirm_button_pressed() -> void:
-    """Handle confirm button press - enemy randomly selects card and resolves."""
     if game_complete:
         return
     
@@ -236,7 +226,6 @@ func _on_confirm_button_pressed() -> void:
     _complete_minigame()
 
 func _on_redo_button_pressed() -> void:
-    """Handle redo button press - allow player to change move."""
     if game_complete:
         return
     
@@ -250,7 +239,6 @@ func _on_redo_button_pressed() -> void:
     _update_display()
 
 func _update_move_buttons() -> void:
-    """Update move button states based on current selection."""
     if strike_button != null:
         strike_button.button_pressed = (player_move == MOVE_STRIKE)
     if grapple_button != null:
@@ -259,7 +247,6 @@ func _update_move_buttons() -> void:
         counter_button.button_pressed = (player_move == MOVE_COUNTER)
 
 func _update_display() -> void:
-    """Update UI display with current game state."""
     if status_label == null:
         return  # UI not ready yet
     
@@ -363,7 +350,7 @@ func _complete_minigame() -> void:
     # Create action with source, target and damage
     var action = Action.new(character)
     if target != null:
-        action.targets = [target]
+        action.targets.append(target)
     action.damage = damage
     
     # Build effects array from card outcome

@@ -59,7 +59,6 @@ func duplicate() -> BattleEntity:
     return null
 
 func serialize() -> Dictionary:
-    """Serialize entity to dictionary for save system."""
     var data: Dictionary = {
         "entity_id": entity_id,
         "display_name": display_name,
@@ -71,7 +70,6 @@ func serialize() -> Dictionary:
     return data
 
 func deserialize(data: Dictionary) -> void:
-    """Deserialize entity from dictionary."""
     entity_id = data.get("entity_id", "")
     display_name = data.get("display_name", "")
     
@@ -98,7 +96,6 @@ func deserialize(data: Dictionary) -> void:
     _deserialize_status_effects(data.get("status_effects", []))
 
 func _serialize_status_effects() -> Array[Dictionary]:
-    """Serialize status effects to array of dictionaries."""
     var effects_data: Array[Dictionary] = []
     for effect in status_manager.status_effects:
         # Use the effect's own serialize method
@@ -120,7 +117,6 @@ func _serialize_status_effects() -> Array[Dictionary]:
     return effects_data
 
 func _deserialize_status_effects(effects_data: Array) -> void:
-    """Deserialize status effects from array of dictionaries."""
     status_manager.status_effects.clear()
     
     for effect_data in effects_data:

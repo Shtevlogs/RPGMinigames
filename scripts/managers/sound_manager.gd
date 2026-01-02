@@ -1,8 +1,5 @@
 extends Node
 
-# NOTE: This is an autoload singleton. Do not add class_name.
-# Autoload singletons are accessed globally by their autoload name (SoundManager).
-
 # SoundManager - Centralized sound system for BGM and SFX
 # Single BGM track and single SFX track for alpha
 
@@ -39,7 +36,6 @@ func _ready() -> void:
     add_child(sfx_player)
 
 func play_sfx(_sound_id: String) -> void:
-    """Play a sound effect by ID."""
     # TODO: Load and play actual sound file
     # For now, this is a placeholder
     if sfx_player == null:
@@ -54,7 +50,6 @@ func play_sfx(_sound_id: String) -> void:
     pass
 
 func change_bgm(_music_id: String) -> void:
-    """Change background music by ID."""
     # TODO: Load and play actual music file
     # For now, this is a placeholder
     if bgm_player == null:
@@ -69,11 +64,9 @@ func change_bgm(_music_id: String) -> void:
     pass
 
 func set_sfx_volume(volume: float) -> void:
-    """Set SFX volume (0.0 to 1.0)."""
     if sfx_player != null:
         sfx_player.volume_db = linear_to_db(clamp(volume, 0.0, 1.0))
 
 func set_bgm_volume(volume: float) -> void:
-    """Set BGM volume (0.0 to 1.0)."""
     if bgm_player != null:
         bgm_player.volume_db = linear_to_db(clamp(volume, 0.0, 1.0))

@@ -1,9 +1,5 @@
 extends Node
 
-# NOTE: This is an autoload singleton. Do not add class_name.
-# Autoload singletons are accessed globally by their autoload name (SceneManager).
-# Adding class_name to autoload singletons can cause conflicts and is unnecessary.
-
 # SceneManager - Handles scene transitions and loading
 # Provides smooth transitions between game scenes
 

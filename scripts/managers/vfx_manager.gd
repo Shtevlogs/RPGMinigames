@@ -1,8 +1,5 @@
 extends Node
 
-# NOTE: This is an autoload singleton. Do not add class_name.
-# Autoload singletons are accessed globally by their autoload name (VFXManager).
-
 # VFXManager - Centralized visual effects system using registry pattern
 # Maintains pool of VFX nodes and handles effect playback
 

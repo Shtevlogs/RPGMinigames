@@ -1,9 +1,6 @@
 class_name TimeWizardMinigame
 extends BaseMinigame
 
-const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
-const TIME_WIZARD_MINIGAME_RESULT_DATA = preload("res://scripts/data/time_wizard_minigame_result_data.gd")
-
 # Time Wizard minigame - Minesweeper analogue with time-based mechanics
 # Core minesweeper mechanics with timeline events, time limit, and completion-based damage
 
@@ -52,7 +49,6 @@ const EVENT_SYMBOL_PENTAGON: int = 2
 const EVENT_SYMBOL_HEXAGON: int = 3
 
 func _setup_ui_references() -> void:
-    """Set up UI node references. Can be called multiple times safely."""
     if time_label != null:
         return  # Already set up
     
@@ -107,7 +103,6 @@ func initialize_minigame() -> void:
     _update_grid_display()
 
 func _initialize_grid() -> void:
-    """Initialize the grid with empty squares."""
     grid.clear()
     square_buttons.clear()
     
@@ -125,7 +120,6 @@ func _initialize_grid() -> void:
     # EQUIPMENT HOOK: Apply board state from basic attacks
 
 func _place_events(safe_x: int, safe_y: int) -> void:
-    """Place events randomly on the board, ensuring the first click is safe."""
     var events_placed: int = 0
     var max_attempts: int = 1000
     
@@ -151,7 +145,6 @@ func _place_events(safe_x: int, safe_y: int) -> void:
     _calculate_nearby_counts()
 
 func _calculate_nearby_counts() -> void:
-    """Calculate the number of adjacent events for each square (minesweeper logic)."""
     for y in range(board_size):
         for x in range(board_size):
             if grid[y][x].is_event:
@@ -180,7 +173,6 @@ func _calculate_nearby_counts() -> void:
             grid[y][x].nearby_event_symbols = nearby_symbols
 
 func _setup_timer() -> void:
-    """Set up the countdown timer."""
     if timer == null:
         timer = Timer.new()
         timer.wait_time = 0.1  # Update every 0.1 seconds
@@ -190,7 +182,6 @@ func _setup_timer() -> void:
     timer.start()
 
 func _on_timer_tick() -> void:
-    """Handle timer tick - update time remaining."""
     if game_complete:
         return
     
@@ -202,7 +193,6 @@ func _on_timer_tick() -> void:
     _update_display()
 
 func _on_time_expired() -> void:
-    """Handle time expiration - auto-complete minigame."""
     if game_complete:
         return
     
@@ -221,7 +211,6 @@ func _on_time_expired() -> void:
     _complete_minigame()
 
 func _reveal_square(x: int, y: int) -> void:
-    """Reveal a square and cascade if needed."""
     if x < 0 or x >= board_size or y < 0 or y >= board_size:
         return
     
@@ -252,7 +241,6 @@ func _reveal_square(x: int, y: int) -> void:
     _update_grid_display()
 
 func _on_square_clicked(x: int, y: int) -> void:
-    """Handle square button left-click."""
     if game_complete:
         return
     
@@ -279,14 +267,12 @@ func _on_square_clicked(x: int, y: int) -> void:
     _update_display()
 
 func _on_square_gui_input(x: int, y: int, event: InputEvent) -> void:
-    """Handle GUI input events (for right-click detection)."""
     if event is InputEventMouseButton:
         var mouse_event: InputEventMouseButton = event as InputEventMouseButton
         if mouse_event.button_index == MOUSE_BUTTON_RIGHT and mouse_event.pressed:
             _on_square_right_clicked(x, y)
 
 func _on_square_right_clicked(x: int, y: int) -> void:
-    """Handle square button right-click for flagging."""
     if game_complete:
         return
     
@@ -301,7 +287,6 @@ func _on_square_right_clicked(x: int, y: int) -> void:
     _update_grid_display()
 
 func _activate_event() -> void:
-    """Activate the selected event and complete minigame."""
     if game_complete or selected_event.x < 0 or selected_event.y < 0:
         return
     
@@ -314,11 +299,9 @@ func _activate_event() -> void:
     _complete_minigame()
 
 func _on_activate_event_button_pressed() -> void:
-    """Handle event activation button press (kept for compatibility, but events now activate on click)."""
     _activate_event()
 
 func _update_grid_display() -> void:
-    """Update the grid display with current square states."""
     if grid_container == null:
         return
     
@@ -387,7 +370,6 @@ func _update_grid_display() -> void:
         activate_event_button.disabled = not can_activate
 
 func _get_event_symbol_text(symbol: int) -> String:
-    """Get text representation of event symbol."""
     match symbol:
         EVENT_SYMBOL_TRIANGLE:
             return "△"
@@ -401,7 +383,6 @@ func _get_event_symbol_text(symbol: int) -> String:
             return "?"
 
 func _update_display() -> void:
-    """Update UI display with current game state."""
     if time_label == null:
         return  # UI not ready yet
     
@@ -426,11 +407,9 @@ func _update_display() -> void:
         completion_label.text = "Board Completion: %.1f%% (%d/%d)" % [completion, revealed_count, total_squares]
 
 func _calculate_completion_percentage() -> float:
-    """Calculate board completion percentage (0.0-1.0)."""
     return float(revealed_count) / float(total_squares)
 
 func _is_mega_time_burst() -> bool:
-    """Check if all non-event squares are cleared (Mega Time Burst condition)."""
     for y in range(board_size):
         for x in range(board_size):
             if not grid[y][x].is_event and not grid[y][x].revealed:
@@ -438,7 +417,6 @@ func _is_mega_time_burst() -> bool:
     return true
 
 func _complete_minigame() -> void:
-    """Complete the minigame and create result."""
     var completion: float = _calculate_completion_percentage()
     var is_event_activated: bool = (selected_event.x >= 0 and selected_event.y >= 0)
     var is_mega_burst: bool = _is_mega_time_burst() and not is_event_activated
@@ -458,7 +436,7 @@ func _complete_minigame() -> void:
     result.actions.append(action)
     
     # Create result data
-    var result_data = TIME_WIZARD_MINIGAME_RESULT_DATA.new()
+    var result_data = TimeWizardMinigameResultData.new()
     result_data.completion_percentage = completion
     result_data.event_activated = is_event_activated
     result_data.mega_time_burst = is_mega_burst
@@ -482,7 +460,6 @@ func _complete_minigame() -> void:
     complete_minigame(result)
 
 func _calculate_damage(completion: float, is_event_activated: bool, is_mega_burst: bool) -> int:
-    """Calculate damage based on completion percentage and outcome type."""
     if character == null:
         return 0
     
@@ -508,7 +485,6 @@ func _calculate_damage(completion: float, is_event_activated: bool, is_mega_burs
     return int(base_damage * damage_multiplier * luck_multiplier)
 
 static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
-    """Build context data for Time Wizard minigame."""
     # This is handled by TimeWizardBehavior.build_minigame_context()
     # This method exists for consistency with other minigames
     return {}

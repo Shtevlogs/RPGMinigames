@@ -1,8 +1,6 @@
 class_name BaseMinigame
 extends Control
 
-const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
-
 # Base class for all minigames
 # Provides common interface for minigame integration
 

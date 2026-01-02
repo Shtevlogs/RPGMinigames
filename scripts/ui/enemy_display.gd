@@ -47,7 +47,6 @@ func update_display() -> void:
     _update_status_effects_display()
 
 func set_highlighted(highlight: bool) -> void:
-    """Set glow effect for turn indication."""
     if highlight:
         if glow_sprite == null:
             # TODO: Create actual glow sprite

@@ -1,9 +1,6 @@
 class_name WildMageMinigame
 extends BaseMinigame
 
-const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
-const WILD_MAGE_MINIGAME_RESULT_DATA = preload("res://scripts/data/wild_mage_minigame_result_data.gd")
-
 # Wild Mage minigame - Poker-like card game implementation
 # Core poker mechanics with hand evaluation and discard system
 
@@ -56,7 +53,6 @@ var current_hand_type: String = "high_card"
 var current_multiplier: float = 1.0
 
 func _setup_ui_references() -> void:
-    """Set up UI node references. Can be called multiple times safely."""
     if hand_display_label != null:
         return  # Already set up
     
@@ -115,7 +111,6 @@ func initialize_minigame() -> void:
     _update_display()
 
 func _create_deck() -> void:
-    """Create a 16-card deck (8 numbers, 2 suits each)."""
     deck.clear()
     var suits: Array[String] = ["square", "circle"]
     var numbers: Array[int] = [9, 8, 7, 6, 5, 4, 3, 2]
@@ -125,11 +120,9 @@ func _create_deck() -> void:
             deck.append(Card.new(suit, number))
 
 func _shuffle_deck() -> void:
-    """Shuffle the deck."""
     deck.shuffle()
 
 func _deal_initial_hand() -> void:
-    """Deal initial hand based on hand_size."""
     hand.clear()
     selected_cards.clear()
     game_complete = false
@@ -142,7 +135,6 @@ func _deal_initial_hand() -> void:
         hand.append(_draw_card())
 
 func _draw_card() -> Card:
-    """Draw a card from the deck."""
     if deck.is_empty():
         push_error("Deck is empty!")
         return null
@@ -150,7 +142,6 @@ func _draw_card() -> Card:
     return deck.pop_back()
 
 func _get_selected_cards() -> Array[Card]:
-    """Get array of currently selected cards."""
     var selected: Array[Card] = []
     for index in selected_cards:
         if index >= 0 and index < hand.size():
@@ -158,7 +149,6 @@ func _get_selected_cards() -> Array[Card]:
     return selected
 
 func _evaluate_selected_cards() -> void:
-    """Evaluate hand strength of selected cards only and determine multiplier."""
     var selected: Array[Card] = _get_selected_cards()
     
     if selected.is_empty():
@@ -190,7 +180,6 @@ func _evaluate_selected_cards() -> void:
     # EQUIPMENT HOOK: Apply equipment effects that add bonus multipliers or effects
 
 func _is_pair(cards: Array[Card]) -> bool:
-    """Check if cards contain exactly one pair."""
     if cards.size() < 2:
         return false
     
@@ -208,7 +197,6 @@ func _is_pair(cards: Array[Card]) -> bool:
     return pair_count == 1
 
 func _is_two_pair(cards: Array[Card]) -> bool:
-    """Check if cards contain exactly two pairs."""
     if cards.size() < 4:
         return false
     
@@ -226,7 +214,6 @@ func _is_two_pair(cards: Array[Card]) -> bool:
     return pair_count >= 2
 
 func _is_flush(cards: Array[Card]) -> bool:
-    """Check if all cards share the same suit (requires exactly 5 cards)."""
     if cards.size() != 5:
         return false
     
@@ -238,7 +225,6 @@ func _is_flush(cards: Array[Card]) -> bool:
     return true
 
 func _is_straight(cards: Array[Card]) -> bool:
-    """Check if cards form a straight (5 consecutive numbers, any suit combination)."""
     if cards.size() != 5:
         return false
     
@@ -278,7 +264,6 @@ func _is_straight(cards: Array[Card]) -> bool:
     return false
 
 func _is_straight_flush(cards: Array[Card]) -> bool:
-    """Check if cards form a straight flush (5 consecutive numbers, all same suit)."""
     if cards.size() != 5:
         return false
     
@@ -290,7 +275,6 @@ func _is_straight_flush(cards: Array[Card]) -> bool:
     return _is_straight(cards)
 
 func _update_display() -> void:
-    """Update UI display with current game state."""
     if hand_display_label == null:
         return  # UI not ready yet
     
@@ -369,7 +353,6 @@ func _update_display() -> void:
             play_button.text = "Play"
 
 func _update_card_buttons() -> void:
-    """Update or create card buttons for the current hand."""
     if card_container == null:
         return
     
@@ -407,7 +390,6 @@ func _update_card_buttons() -> void:
         card_buttons.append(button)
 
 func _on_card_clicked(card_index: int) -> void:
-    """Handle card click for selection/deselection."""
     if game_complete:
         return
     
@@ -458,7 +440,6 @@ func _on_discard_button_pressed() -> void:
     _update_display()
 
 func _on_play_button_pressed() -> void:
-    """Handle play button press - finalize hand and complete minigame."""
     if game_complete:
         return
     
@@ -486,7 +467,7 @@ func _on_play_button_pressed() -> void:
     result.actions.append(action)
     
     # Create result data
-    var result_data = WILD_MAGE_MINIGAME_RESULT_DATA.new()
+    var result_data = WildMageMinigameResultData.new()
     result_data.hand_type = current_hand_type
     result_data.hand_cards = _get_selected_cards_data()
     result_data.multiplier = current_multiplier
@@ -498,7 +479,6 @@ func _on_play_button_pressed() -> void:
     complete_minigame(result)
 
 func _calculate_damage() -> int:
-    """Calculate damage based on hand strength and character's base attack."""
     if character == null:
         return 0
     
@@ -512,12 +492,10 @@ func _calculate_damage() -> int:
     return int(base_damage * current_multiplier)
 
 func _get_performance_score() -> float:
-    """Get performance score (0.0-1.0) based on hand strength."""
     # Map multiplier to performance score (1.0x = 0.0, 5.0x = 1.0)
     return clamp((current_multiplier - 1.0) / 4.0, 0.0, 1.0)
 
 func _get_selected_cards_data() -> Array:
-    """Get array of selected card data for metadata."""
     var cards_data: Array = []
     var selected: Array[Card] = _get_selected_cards()
     for card in selected:
@@ -528,7 +506,6 @@ func _get_selected_cards_data() -> Array:
     return cards_data
 
 static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
-    """Build context data for Wild Mage minigame."""
     # This is handled by WildMageBehavior.build_minigame_context()
     # This method exists for consistency with other minigames
     return {}

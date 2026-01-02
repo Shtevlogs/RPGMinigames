@@ -96,7 +96,10 @@ func get_attack_action(character: CharacterBattleEntity, target: BattleEntity, c
     var attack_action := super.get_attack_action(character, target, combat_log)
     
     #TODO: add a way for an effect to be actually permanent
-    var strategy_debuff = AlterAttributeEffect.new("strategy", -1, 99)
+    var strategy_debuff = AlterAttributeEffect.new()
+    strategy_debuff.attribute_name = "strategy"
+    strategy_debuff.alteration_amount = -1
+    strategy_debuff.duration = 99
     strategy_debuff.target = target
     attack_action.status_effects.append(strategy_debuff)
     

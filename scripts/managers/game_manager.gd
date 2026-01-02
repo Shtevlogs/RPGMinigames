@@ -1,9 +1,5 @@
 extends Node
 
-# NOTE: This is an autoload singleton. Do not add class_name.
-# Autoload singletons are accessed globally by their autoload name (GameManager).
-# Adding class_name to autoload singletons can cause conflicts and is unnecessary.
-
 # GameManager - Central game state management
 # Handles run state, party state, and overall game flow
 

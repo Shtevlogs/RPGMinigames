@@ -1,10 +1,6 @@
 class_name BerserkerMinigame
 extends BaseMinigame
 
-const BERSERKER_MINIGAME_CONTEXT = preload("res://scripts/data/berserker_minigame_context.gd")
-const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
-const BERSERKER_MINIGAME_RESULT_DATA = preload("res://scripts/data/berserker_minigame_result_data.gd")
-
 # Berserker minigame - Blackjack implementation
 # First pass: Core blackjack mechanics with stubbed advanced features
 
@@ -57,7 +53,6 @@ var is_berserking: bool = false  # Stub: track berserk state
 var berserk_stacks: int = 0  # Stub: track berserk stacks
 
 func _setup_ui_references() -> void:
-    """Set up UI node references. Can be called multiple times safely."""
     if hand_value_label != null:
         return  # Already set up
     
@@ -107,7 +102,6 @@ func initialize_minigame() -> void:
         _on_stand_button_pressed()
 
 func _create_deck() -> void:
-    """Create a standard 52-card deck."""
     deck.clear()
     var suits: Array[String] = ["hearts", "diamonds", "clubs", "spades"]
     
@@ -116,11 +110,9 @@ func _create_deck() -> void:
             deck.append(Card.new(suit, rank))
 
 func _shuffle_deck() -> void:
-    """Shuffle the deck."""
     deck.shuffle()
 
 func _deal_initial_cards() -> void:
-    """Deal two initial cards to the player."""
     hand.clear()
     is_busted = false
     is_blackjack = false
@@ -144,7 +136,6 @@ func _deal_initial_cards() -> void:
         _trigger_berserk_state()
 
 func _draw_card() -> Card:
-    """Draw a card from the deck."""
     if deck.is_empty():
         push_error("Deck is empty!")
         return null
@@ -152,7 +143,6 @@ func _draw_card() -> Card:
     return deck.pop_back()
 
 func _calculate_hand_value() -> int:
-    """Calculate hand value with proper ace handling."""
     var total: int = 0
     var ace_count: int = 0
     
@@ -182,7 +172,6 @@ func _calculate_hand_value() -> int:
     return hand_value
 
 func _update_display() -> void:
-    """Update UI display with current game state."""
     if hand_value_label == null:
         return  # UI not ready yet
     
@@ -215,7 +204,6 @@ func _update_display() -> void:
         stand_button.disabled = is_busted or game_complete or is_blackjack
 
 func _on_hit_button_pressed() -> void:
-    """Handle hit button press."""
     if is_busted or game_complete or is_blackjack:
         return
     
@@ -241,7 +229,6 @@ func _on_hit_button_pressed() -> void:
         _on_stand_button_pressed()
 
 func _on_stand_button_pressed() -> void:
-    """Handle stand button press."""
     if game_complete:
         return
     
@@ -265,14 +252,15 @@ func _on_stand_button_pressed() -> void:
     
     # Add berserk effect if berserking
     if is_berserking and berserk_stacks > 0:
-        var effect = BERSERK_EFFECT.new(berserk_stacks)
+        var effect = BerserkEffect.new()
+        effect.stacks = berserk_stacks
         effect.target = character  # Self-target
         action.status_effects.append(effect)
     
     result.actions.append(action)
     
     # Create result data
-    var result_data = BERSERKER_MINIGAME_RESULT_DATA.new()
+    var result_data = BerserkerMinigameResultData.new()
     result_data.hand_value = hand_value
     result_data.cards_drawn = hand.size()
     result_data.busted = is_busted
@@ -286,7 +274,6 @@ func _on_stand_button_pressed() -> void:
     complete_minigame(result)
 
 func _calculate_damage() -> int:
-    """Calculate damage based on hand value and character's base attack."""
     if character == null:
         return 0
     
@@ -310,19 +297,16 @@ func _calculate_damage() -> int:
     return int(base_damage * multiplier)
 
 func _get_performance_score() -> float:
-    """Get performance score (0.0-1.0) based on hand value."""
     if is_busted:
         return 0.0
     return clamp(float(hand_value) / 21.0, 0.0, 1.0)
 
 func _trigger_berserk_state() -> void:
-    """Trigger berserk state: set is_berserking and increment stacks (max 10)."""
     is_berserking = true
     # Increment stacks, capping at 10
     berserk_stacks = min(berserk_stacks + 1, 10)
 
 static func build_context(_character: CharacterBattleEntity, _target: BattleEntity) -> Dictionary:
-    """Build context data for Berserker minigame."""
     var class_state = _character.class_state
     
     return {

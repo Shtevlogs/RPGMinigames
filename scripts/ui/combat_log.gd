@@ -28,7 +28,6 @@ func _ready() -> void:
     clear_log()
 
 func clear_log() -> void:
-    """Clear all log entries. Should be called at encounter start."""
     # Remove all existing labels
     for label in log_labels:
         if is_instance_valid(label):
@@ -36,7 +35,6 @@ func clear_log() -> void:
     log_labels.clear()
 
 func add_entry(message: String, event_type: EventType = EventType.SPECIAL) -> void:
-    """Add a new log entry with color coding based on event type."""
     if log_container == null:
         return
     
@@ -61,7 +59,6 @@ func add_entry(message: String, event_type: EventType = EventType.SPECIAL) -> vo
     _start_fade_animation(label)
 
 func _get_color_for_event_type(event_type: EventType) -> Color:
-    """Get color for event type."""
     match event_type:
         EventType.ATTACK:
             return Color("#FFA500")  # Orange
@@ -87,11 +84,9 @@ func _get_color_for_event_type(event_type: EventType) -> Color:
             return Color.WHITE
 
 func _start_fade_animation(label: Label) -> void:
-    """Start fade animation for a label. Runs asynchronously."""
     _fade_label_async(label)
 
 func _fade_label_async(label: Label) -> void:
-    """Async function to fade out a label."""
     if label == null or not is_instance_valid(label):
         return
     

@@ -1,8 +1,6 @@
 class_name MinigameModal
 extends Control
 
-const MINIGAME_CONTEXT = preload("res://scripts/data/minigame_context.gd")
-
 # Modal container for minigames
 # Displays minigame as an overlay on combat scene
 
@@ -69,7 +67,6 @@ func _input(event: InputEvent) -> void:
         close_modal()
 
 func load_minigame(minigame_scene_path: String, context: MinigameContext) -> void:
-    """Load and display a minigame scene with the given context."""
     # Clear any existing minigame
     if minigame_instance != null:
         minigame_instance.queue_free()
@@ -110,7 +107,6 @@ func load_minigame(minigame_scene_path: String, context: MinigameContext) -> voi
         close_modal()
 
 func _on_resolve_pressed() -> void:
-    """Create a test result and complete the minigame."""
     if minigame_instance == null:
         push_error("No minigame instance to resolve")
         return
@@ -126,14 +122,12 @@ func _on_resolve_pressed() -> void:
     minigame_instance.complete_minigame(test_result)
 
 func _on_minigame_completed(result: MinigameResult) -> void:
-    """Handle minigame completion - emit signal and close modal."""
     # Emit signal with result (combat scene will handle it)
     minigame_result_received.emit(result)
     modal_closed.emit()
     close_modal()
 
 func close_modal() -> void:
-    """Close the modal and clean up."""
     # Disconnect signals
     if minigame_instance != null:
         if minigame_instance.minigame_completed.is_connected(_on_minigame_completed):

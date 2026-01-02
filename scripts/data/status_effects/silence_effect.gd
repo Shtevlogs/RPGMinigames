@@ -1,13 +1,10 @@
 class_name SilenceEffect
 extends StatusEffect
 
-func _init(p_duration: int = 2):
-    duration = p_duration
+func _init():
+    duration = 2
     stacks = 1
     magnitude = 1.0
-
-func get_effect_name() -> String:
-    return "Silence"
 
 func can_stack() -> bool:
     return false
@@ -24,13 +21,5 @@ func on_remove(_battle_state: BattleState) -> void:
     # No cleanup needed
     pass
 
-func get_visual_data() -> Dictionary:
-    return {
-        "icon": "res://sprites/placeholder.png",
-        "color": Color.GRAY,
-        "show_stacks": false
-    }
-
-func duplicate() -> StatusEffect:
-    var dup = SilenceEffect.new(duration)
-    return dup
+func get_visual_data() -> StatusEffectVisualData:
+    return StatusEffectVisualData.new("res://sprites/placeholder.png", Color.GRAY, false)

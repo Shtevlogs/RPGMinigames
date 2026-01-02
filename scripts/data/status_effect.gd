@@ -6,12 +6,6 @@ var stacks: int = 1
 var magnitude: float = 1.0  # For scaling effects
 var target: BattleEntity = null  # Reference to the entity (CharacterBattleEntity or EnemyBattleEntity) this effect is applied to
 
-# Virtual methods to be overridden by subclasses
-func get_effect_name() -> String:
-    # Return display name of effect
-    push_error("get_effect_name() must be overridden in subclass")
-    return "Unknown"
-
 func can_stack() -> bool:
     # Return true if this effect can stack with itself
     push_error("can_stack() must be overridden in subclass")
@@ -75,23 +69,16 @@ func tick() -> bool:
     duration -= 1
     return duration <= 0
 
-func get_visual_data() -> Dictionary:
+func get_visual_data() -> StatusEffectVisualData:
     # Return visual representation data (icon path, color, etc.)
     push_error("get_visual_data() must be overridden in subclass")
-    return {
-        "icon": "",
-        "color": Color.WHITE,
-        "show_stacks": false
-    }
-
-func duplicate() -> StatusEffect:
-    # Create a copy of this effect
-    push_error("duplicate() must be overridden in subclass")
-    return null
+    return StatusEffectVisualData.new("", Color.WHITE, false)
 
 func serialize() -> Dictionary:
+    #TODO: check that this ends up being the name of the file
+    var fname : String = get_script().resource_name
     var data: Dictionary = {
-        "type": get_effect_name().to_lower(),
+        "type": fname,
         "duration": duration,
         "stacks": stacks,
         "magnitude": magnitude
@@ -102,3 +89,25 @@ func deserialize(data: Dictionary) -> void:
     duration = data.get("duration", 0)
     stacks = data.get("stacks", 1)
     magnitude = data.get("magnitude", 1.0)
+
+static var status_type_lookup : Dictionary = {}
+
+static func cache_status_scripts() -> void:
+    if status_type_lookup.is_empty():
+        var path := "res://scripts/data/status_effects"
+        var dir := DirAccess.open(path)
+        dir.list_dir_begin()
+        var file_name := dir.get_next()
+        while file_name != "":
+            var effect_script : GDScript = ResourceLoader.load(path + "/" + file_name)
+            status_type_lookup[file_name] = effect_script
+            file_name = dir.get_next()
+        dir.list_dir_end()
+
+static func deserialize_status(data: Dictionary) -> StatusEffect:
+    if status_type_lookup.is_empty():
+        cache_status_scripts()
+
+    var status : StatusEffect = status_type_lookup[data.type].new()
+    status.deserialize(data)
+    return status

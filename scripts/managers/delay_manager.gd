@@ -1,8 +1,5 @@
 extends Node
 
-# NOTE: This is an autoload singleton. Do not add class_name.
-# Autoload singletons are accessed globally by their autoload name (DelayManager).
-
 # DelayManager - Centralized delay/timing system for combat
 # Provides configurable delay durations and async wait methods
 
