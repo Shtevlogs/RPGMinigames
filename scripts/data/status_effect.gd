@@ -90,7 +90,6 @@ func duplicate() -> StatusEffect:
     return null
 
 func serialize() -> Dictionary:
-    """Serialize status effect to dictionary."""
     var data: Dictionary = {
         "type": get_effect_name().to_lower(),
         "duration": duration,
@@ -100,7 +99,6 @@ func serialize() -> Dictionary:
     return data
 
 func deserialize(data: Dictionary) -> void:
-    """Deserialize status effect from dictionary."""
     duration = data.get("duration", 0)
     stacks = data.get("stacks", 1)
     magnitude = data.get("magnitude", 1.0)

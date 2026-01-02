@@ -1,14 +1,10 @@
 class_name TimeWizardBehavior
 extends BaseClassBehavior
 
-const TIME_WIZARD_MINIGAME_CONTEXT = preload("res://scripts/data/time_wizard_minigame_context.gd")
-const TIME_WIZARD_MINIGAME_RESULT_DATA = preload("res://scripts/data/time_wizard_minigame_result_data.gd")
-
 func needs_target_selection() -> bool:
     return true  # TimeWizard needs target selection
 
 func build_minigame_context(character: CharacterBattleEntity, _target: BattleEntity) -> MinigameContext:
-    """Build context data for Time Wizard minigame."""
     var effective_attrs: Attributes = character.get_effective_attributes()
     var class_state = character.class_state
     
@@ -21,7 +17,7 @@ func build_minigame_context(character: CharacterBattleEntity, _target: BattleEnt
     # Calculate event count from Skill (1 to 11)
     var event_count: int = clamp(1 + effective_attrs.skill, 1, 11)
     
-    var context = TIME_WIZARD_MINIGAME_CONTEXT.new(
+    var context = TimeWizardMinigameContext.new(
         character,
         _target,
         class_state.get("board_state", []),  # Pre-cleared squares from basic attacks

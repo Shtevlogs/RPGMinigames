@@ -1,9 +1,6 @@
 class_name WildMageBehavior
 extends BaseClassBehavior
 
-const WILD_MAGE_MINIGAME_CONTEXT = preload("res://scripts/data/wild_mage_minigame_context.gd")
-const WILD_MAGE_MINIGAME_RESULT_DATA = preload("res://scripts/data/wild_mage_minigame_result_data.gd")
-
 func needs_target_selection() -> bool:
     return false  # WildMage doesn't need target selection
 
@@ -17,7 +14,7 @@ func build_minigame_context(character: CharacterBattleEntity, _target: BattleEnt
     # Discards from Skill and Strategy
     var discards: int = int((effective_attrs.skill + effective_attrs.strategy) / 2.0)
     
-    var context = WILD_MAGE_MINIGAME_CONTEXT.new(
+    var context = WildMageMinigameContext.new(
         character,
         _target,
         class_state.get("pre_drawn_card", null),  # From basic attack state

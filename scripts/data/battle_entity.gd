@@ -1,13 +1,6 @@
 class_name BattleEntity
 extends GameStateSerializable
 
-# Preload status effect classes for deserialization
-const BURN_EFFECT = preload("res://scripts/data/status_effects/burn_effect.gd")
-const SILENCE_EFFECT = preload("res://scripts/data/status_effects/silence_effect.gd")
-const TAUNT_EFFECT = preload("res://scripts/data/status_effects/taunt_effect.gd")
-const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
-const BERSERK_EFFECT = preload("res://scripts/data/status_effects/berserk_effect.gd")
-
 var entity_id: String
 var display_name: String
 var attributes: Attributes
@@ -140,15 +133,15 @@ func _deserialize_status_effects(effects_data: Array) -> void:
         
         # Determine effect class from class name or type and create instance
         if effect_class == "burn" or effect_type == "burn":
-            effect = BURN_EFFECT.new()
+            effect = BurnEffect.new()
         elif effect_class == "silence" or effect_type == "silence":
-            effect = SILENCE_EFFECT.new()
+            effect = SilenceEffect.new()
         elif effect_class == "taunt" or effect_type == "taunt":
-            effect = TAUNT_EFFECT.new()
+            effect = TauntEffect.new()
         elif effect_class == "alter_attribute" or effect_type.contains("alter"):
-            effect = ALTER_ATTRIBUTE_EFFECT.new()
+            effect = AlterAttributeEffect.new()
         elif effect_class == "berserk" or effect_type == "berserk":
-            effect = BERSERK_EFFECT.new()
+            effect = BerserkEffect.new()
         
         # Use the effect's deserialize method to restore state
         if effect != null:
