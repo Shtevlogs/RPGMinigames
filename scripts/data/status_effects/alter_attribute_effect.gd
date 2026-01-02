@@ -9,7 +9,6 @@ func _init():
     alteration_amount = 0
     duration = 3
     stacks = 1
-    magnitude = 1.0
 
 func can_stack() -> bool:
     return true  # Stackable - multiple applications increase the debuff/buff
@@ -61,7 +60,6 @@ func get_visual_data() -> StatusEffectVisualData:
     return StatusEffectVisualData.new("res://sprites/placeholder.png", effect_color, true)
 
 func serialize() -> Dictionary:
-    """Serialize alter attribute effect to dictionary."""
     var data: Dictionary = super.serialize()
     data["class"] = "alter_attribute"
     data["attribute_name"] = attribute_name
@@ -69,7 +67,6 @@ func serialize() -> Dictionary:
     return data
 
 func deserialize(data: Dictionary) -> void:
-    """Deserialize alter attribute effect from dictionary."""
     super.deserialize(data)
     attribute_name = data.get("attribute_name", "")
     alteration_amount = data.get("alteration_amount", 0)

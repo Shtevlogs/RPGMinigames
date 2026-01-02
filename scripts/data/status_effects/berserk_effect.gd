@@ -1,8 +1,6 @@
 class_name BerserkEffect
 extends StatusEffect
 
-const ALTER_ATTRIBUTE_EFFECT = preload("res://scripts/data/status_effects/alter_attribute_effect.gd")
-
 var berserk_stacks: int = 1  # Number of berserk stacks (1-10)
 var power_effect_ref: StatusEffect = null  # Reference to the Power effect we created
 var speed_effect_ref: StatusEffect = null  # Reference to the Speed effect we created
@@ -11,7 +9,6 @@ func _init():
     berserk_stacks = 1
     duration = 999  # Very long duration, persists until cleared
     stacks = 1
-    magnitude = 1.0
 
 func can_stack() -> bool:
     return true  # Can stack to increase berserk_stacks
@@ -50,7 +47,7 @@ func on_apply(p_target: BattleEntity, status_effects_array: Array[StatusEffect])
             power_effect_ref.attribute_name = "power"
             power_effect_ref.stacks = berserk_stacks
             power_effect_ref.duration = 999
-            speed_effect_ref = ALTER_ATTRIBUTE_EFFECT.new()
+            speed_effect_ref = AlterAttributeEffect.new()
             speed_effect_ref.attribute_name = "speed"
             speed_effect_ref.stacks = berserk_stacks
             speed_effect_ref.duration = 999
@@ -75,14 +72,12 @@ func on_remove(_battle_state: BattleState) -> void:
             character.status_effects.erase(speed_effect_ref)
 
 func _update_class_state(p_target: BattleEntity, num_stacks: int) -> void:
-    """Update class_state with berserk information."""
     if p_target is CharacterBattleEntity:
         var character: CharacterBattleEntity = p_target as CharacterBattleEntity
         character.class_state["is_berserking"] = true
         character.class_state["berserk_stacks"] = num_stacks
 
 func _update_attribute_effects(p_target: BattleEntity, num_stacks: int, effect_to_update: BerserkEffect = null) -> void:
-    """Update Power and Speed AlterAttributeEffects to match current stacks."""
     if not (p_target is CharacterBattleEntity):
         return
     
@@ -102,7 +97,7 @@ func _update_attribute_effects(p_target: BattleEntity, num_stacks: int, effect_t
     target_effect.power_effect_ref.attribute_name = "power"
     target_effect.power_effect_ref.stacks = num_stacks
     target_effect.power_effect_ref.duration = 999
-    target_effect.speed_effect_ref = ALTER_ATTRIBUTE_EFFECT.new()
+    target_effect.speed_effect_ref = AlterAttributeEffect.new()
     target_effect.speed_effect_ref.attribute_name = "speed"
     target_effect.speed_effect_ref.stacks = num_stacks
     target_effect.speed_effect_ref.duration = 999
@@ -113,7 +108,6 @@ func get_visual_data() -> StatusEffectVisualData:
     return StatusEffectVisualData.new("res://sprites/placeholder.png", Color.RED, true)
 
 func serialize() -> Dictionary:
-    """Serialize berserk effect to dictionary."""
     var data: Dictionary = super.serialize()
     data["class"] = "berserk"
     data["berserk_stacks"] = berserk_stacks

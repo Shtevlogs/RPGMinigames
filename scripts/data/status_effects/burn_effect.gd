@@ -1,6 +1,8 @@
 class_name BurnEffect
 extends StatusEffect
 
+var magnitude := 1.0
+
 func _init():
     duration = 3
     stacks = 1

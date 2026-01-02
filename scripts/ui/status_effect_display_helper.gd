@@ -4,7 +4,7 @@ extends RefCounted
 # Static utility class for creating status effect display indicators
 # Shared between CharacterDisplay and EnemyDisplay
 
-static func create_status_effect_indicator(effect: StatusEffect, visual_data: Dictionary) -> Control:
+static func create_status_effect_indicator(effect: StatusEffect, visual_data: StatusEffectVisualData) -> Control:
     # Create a container for the status effect indicator
     var container: Control = Control.new()
     container.custom_minimum_size = Vector2(30, 30)
@@ -14,7 +14,7 @@ static func create_status_effect_indicator(effect: StatusEffect, visual_data: Di
     var panel: Panel = Panel.new()
     panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     var style: StyleBoxFlat = StyleBoxFlat.new()
-    style.bg_color = visual_data.get("color", Color.WHITE)
+    style.bg_color = visual_data.color
     style.bg_color.a = 0.7
     style.border_width_left = 1
     style.border_width_right = 1
@@ -32,7 +32,7 @@ static func create_status_effect_indicator(effect: StatusEffect, visual_data: Di
     label.add_theme_font_size_override("font_size", 12)
     label.add_theme_color_override("font_color", Color.BLACK)
     
-    if visual_data.get("show_stacks", false) and effect.stacks > 1:
+    if visual_data.show_stacks and effect.stacks > 1:
         label.text = str(effect.stacks)
     else:
         label.text = effect.get_effect_name().substr(0, 1)
@@ -40,4 +40,3 @@ static func create_status_effect_indicator(effect: StatusEffect, visual_data: Di
     container.add_child(label)
     
     return container
-

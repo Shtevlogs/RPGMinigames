@@ -4,7 +4,6 @@ extends StatusEffect
 func _init():
     duration = 2
     stacks = 1
-    magnitude = 1.0
 
 func can_stack() -> bool:
     return false

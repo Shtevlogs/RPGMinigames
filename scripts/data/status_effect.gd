@@ -3,7 +3,6 @@ extends GameStateSerializable
 
 var duration: int = 0  # turns remaining
 var stacks: int = 1
-var magnitude: float = 1.0  # For scaling effects
 var target: BattleEntity = null  # Reference to the entity (CharacterBattleEntity or EnemyBattleEntity) this effect is applied to
 
 func can_stack() -> bool:
@@ -81,14 +80,12 @@ func serialize() -> Dictionary:
         "type": fname,
         "duration": duration,
         "stacks": stacks,
-        "magnitude": magnitude
     }
     return data
 
 func deserialize(data: Dictionary) -> void:
     duration = data.get("duration", 0)
     stacks = data.get("stacks", 1)
-    magnitude = data.get("magnitude", 1.0)
 
 static var status_type_lookup : Dictionary = {}
 
