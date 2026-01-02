@@ -10,6 +10,10 @@ func _init():
     duration = 999  # Very long duration, persists until cleared
     stacks = 1
 
+# For display
+func get_effect_name() -> String:
+    return "Berserk"
+
 func can_stack() -> bool:
     return true  # Can stack to increase berserk_stacks
 

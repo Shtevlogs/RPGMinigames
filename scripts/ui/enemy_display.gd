@@ -70,11 +70,11 @@ func _update_status_effects_display() -> void:
     
     # Create indicators for each status effect
     for effect in enemy_data.status_effects:
-        var visual_data: Dictionary = effect.get_visual_data()
+        var visual_data: StatusEffectVisualData = effect.get_visual_data()
         var indicator: Control = _create_status_effect_indicator(effect, visual_data)
         status_effects_container.add_child(indicator)
 
-func _create_status_effect_indicator(effect: StatusEffect, visual_data: Dictionary) -> Control:
+func _create_status_effect_indicator(effect: StatusEffect, visual_data: StatusEffectVisualData) -> Control:
     return StatusEffectDisplayHelper.create_status_effect_indicator(effect, visual_data)
 
 func _gui_input(event: InputEvent) -> void:

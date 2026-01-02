@@ -8,6 +8,10 @@ func _init():
     stacks = 1
     magnitude = 1.0
 
+# For display
+func get_effect_name() -> String:
+    return "Burn"
+
 func can_stack() -> bool:
     return true
 

@@ -5,6 +5,10 @@ var duration: int = 0  # turns remaining
 var stacks: int = 1
 var target: BattleEntity = null  # Reference to the entity (CharacterBattleEntity or EnemyBattleEntity) this effect is applied to
 
+# For display
+func get_effect_name() -> String:
+    return "Unknown Effect"
+
 func can_stack() -> bool:
     # Return true if this effect can stack with itself
     push_error("can_stack() must be overridden in subclass")
@@ -73,9 +77,13 @@ func get_visual_data() -> StatusEffectVisualData:
     push_error("get_visual_data() must be overridden in subclass")
     return StatusEffectVisualData.new("", Color.WHITE, false)
 
+func get_file_name() -> String:
+    var fpath := (get_script().resource_path as String).split("/")
+    return fpath[fpath.size() - 1]
+
 func serialize() -> Dictionary:
     #TODO: check that this ends up being the name of the file
-    var fname : String = get_script().resource_name
+    var fname : String = get_file_name()
     var data: Dictionary = {
         "type": fname,
         "duration": duration,

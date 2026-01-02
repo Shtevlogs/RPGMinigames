@@ -5,6 +5,10 @@ func _init():
     duration = 2
     stacks = 1
 
+# For display
+func get_effect_name() -> String:
+    return "Taunt"
+
 func can_stack() -> bool:
     return false
 

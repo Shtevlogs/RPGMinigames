@@ -10,6 +10,10 @@ func _init():
     duration = 3
     stacks = 1
 
+# For display
+func get_effect_name() -> String:
+    return "%s %s" % ["Increase" if alteration_amount > 0 else "Reduce", attribute_name.to_pascal_case()]
+
 func can_stack() -> bool:
     return true  # Stackable - multiple applications increase the debuff/buff
 
