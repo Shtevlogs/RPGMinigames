@@ -93,7 +93,13 @@ func deserialize(data: Dictionary) -> void:
         status_manager = StatusEffectManager.new(self)
     
     # Deserialize status effects
-    _deserialize_status_effects(data.get("status_effects", []))
+    var effects_data : Array = data.get("status_effects", [])
+    status_manager.status_effects.clear()
+    
+    for effect_data : Dictionary in effects_data:
+        var effect := StatusEffect.deserialize_status(effect_data)
+        effect.target = self
+        status_manager.status_effects.append(effect)
 
 func _serialize_status_effects() -> Array[Dictionary]:
     var effects_data: Array[Dictionary] = []
@@ -101,46 +107,5 @@ func _serialize_status_effects() -> Array[Dictionary]:
         # Use the effect's own serialize method
         var effect_data: Dictionary = effect.serialize()
         
-        # Add class identifier for deserialization
-        if effect is BurnEffect:
-            effect_data["class"] = "burn"
-        elif effect is SilenceEffect:
-            effect_data["class"] = "silence"
-        elif effect is TauntEffect:
-            effect_data["class"] = "taunt"
-        elif effect is AlterAttributeEffect:
-            effect_data["class"] = "alter_attribute"
-        elif effect is BerserkEffect:
-            effect_data["class"] = "berserk"
-        
         effects_data.append(effect_data)
     return effects_data
-
-func _deserialize_status_effects(effects_data: Array) -> void:
-    status_manager.status_effects.clear()
-    
-    for effect_data in effects_data:
-        if not effect_data is Dictionary:
-            continue
-        
-        var effect: StatusEffect = null
-        var effect_type: String = effect_data.get("type", "").to_lower()
-        var effect_class: String = effect_data.get("class", "").to_lower()
-        
-        # Determine effect class from class name or type and create instance
-        if effect_class == "burn" or effect_type == "burn":
-            effect = BurnEffect.new()
-        elif effect_class == "silence" or effect_type == "silence":
-            effect = SilenceEffect.new()
-        elif effect_class == "taunt" or effect_type == "taunt":
-            effect = TauntEffect.new()
-        elif effect_class == "alter_attribute" or effect_type.contains("alter"):
-            effect = AlterAttributeEffect.new()
-        elif effect_class == "berserk" or effect_type == "berserk":
-            effect = BerserkEffect.new()
-        
-        # Use the effect's deserialize method to restore state
-        if effect != null:
-            effect.deserialize(effect_data)
-            effect.target = self
-            status_manager.status_effects.append(effect)
